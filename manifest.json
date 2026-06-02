@@ -1,0 +1,26 @@
+{
+  "id": "violation-tracking",
+  "name": "Violation Tracking",
+  "version": "1.0.0",
+  "description": "Board issues CC&R violation notices to units; homeowners acknowledge, respond, or dispute; board tracks through resolution or escalation.",
+  "entrypoint": "index.html",
+  "runtime": "static",
+  "category": "tools",
+  "tags": ["hoa", "violations", "ccr", "compliance", "board"],
+  "data_access": {
+    "reads": ["family.members", "family.groups"],
+    "writes": []
+  },
+  "permissions": {
+    "default_audience": "everyone",
+    "requires_approval": true
+  },
+  "storage": "db",
+  "nav": { "label": "Violations" },
+  "icon": "⚠️",
+  "ai_access": {
+    "allowed": true,
+    "mode": "read",
+    "db_exports": ["open_violations", "all_violations"]
+  }
+}

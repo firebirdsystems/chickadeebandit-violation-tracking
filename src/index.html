@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Violation Tracking</title>
+  <base href="/run/violation-tracking/" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:           var(--hub-bg, #f9fafb);
+      --card:         var(--hub-surface, #ffffff);
+      --border:       var(--hub-border, #e5e7eb);
+      --text:         var(--hub-text, #111827);
+      --muted:        var(--hub-text-muted, #6b7280);
+      --accent:       var(--hub-primary, #111827);
+      --accent-fg:    var(--hub-primary-fg, #ffffff);
+      --accent-hover: var(--hub-primary-hover, #374151);
+      --radius:       var(--hub-radius, 0.5rem);
+      --shadow:       0 1px 3px rgba(0,0,0,.07);
+    }
+
+    body {
+      font-family: var(--hub-font, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
+      background: var(--bg); color: var(--text);
+      min-height: 100vh; font-size: var(--hub-font-size, 15px); line-height: 1.5;
+    }
+    .app { max-width: 640px; margin: 0 auto; padding: 16px; }
+
+    header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 16px; padding: 14px 18px;
+      background: var(--accent); border-radius: var(--radius); color: white;
+    }
+    header h1 { font-size: 1.2rem; font-weight: 700; }
+    header .sub { font-size: 0.8rem; opacity: .75; margin-top: 1px; }
+    .header-actions { display: flex; gap: 8px; align-items: center; }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 16px; border-radius: 8px;
+      font-size: 0.875rem; font-weight: 600; cursor: pointer; border: none; transition: opacity .15s;
+    }
+    .btn:disabled { opacity: .5; cursor: default; }
+    .btn-primary  { background: var(--accent); color: white; }
+    .btn-primary:hover:not(:disabled) { opacity: .88; }
+    .btn-ghost    { background: transparent; color: var(--muted); border: 1.5px solid var(--border); }
+    .btn-ghost:hover { border-color: var(--text); color: var(--text); }
+    .btn-danger   { background: #dc2626; color: white; }
+    .btn-danger:hover:not(:disabled) { opacity: .88; }
+    .btn-icon     { background: rgba(255,255,255,.2); color: white; border: none; font-size: 1.1rem; padding: 6px 10px; border-radius: 8px; cursor: pointer; line-height: 1; }
+    .btn-icon:hover { background: rgba(255,255,255,.3); }
+    .btn-sm       { padding: 5px 12px; font-size: 0.8rem; }
+    .btn-warning  { background: #f59e0b; color: white; }
+    .btn-warning:hover:not(:disabled) { opacity: .88; }
+    .btn-purple   { background: #8b5cf6; color: white; }
+    .btn-purple:hover:not(:disabled) { opacity: .88; }
+    .btn-green    { background: #22c55e; color: white; }
+    .btn-green:hover:not(:disabled) { opacity: .88; }
+
+    .filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+    .filter-tab {
+      padding: 6px 14px; border-radius: 20px;
+      border: 1.5px solid var(--border); background: var(--card);
+      font-size: 0.85rem; font-weight: 600; cursor: pointer; color: var(--muted); transition: all .15s;
+    }
+    .filter-tab.active { border-color: var(--accent); background: #f3f4f6; color: var(--accent); }
+
+    .unit-filter {
+      margin-bottom: 14px;
+    }
+    .unit-filter select {
+      padding: 7px 12px; border-radius: 8px; border: 1.5px solid var(--border);
+      font-size: 0.875rem; background: var(--card); color: var(--text); cursor: pointer;
+    }
+    .unit-filter select:focus { outline: none; border-color: var(--accent); }
+
+    .violation-card {
+      background: var(--card); border: 1.5px solid var(--border);
+      border-radius: var(--radius); padding: 14px 16px;
+      box-shadow: var(--shadow); margin-bottom: 10px;
+      cursor: pointer; transition: border-color .15s;
+    }
+    .violation-card:hover { border-color: var(--accent); }
+    .violation-card.overdue { border-left: 4px solid #ef4444; }
+
+    .vc-top { display: flex; align-items: flex-start; gap: 10px; }
+    .vc-icon { font-size: 1.5rem; flex-shrink: 0; line-height: 1.3; }
+    .vc-body { flex: 1; min-width: 0; }
+    .vc-title { font-weight: 700; font-size: 0.95rem; }
+    .vc-meta  { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+    .vc-footer { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-top: 8px; }
+    .overdue-label { font-size: 0.75rem; font-weight: 700; color: #ef4444; }
+
+    .badge {
+      display: inline-flex; align-items: center;
+      padding: 3px 10px; border-radius: 12px;
+      font-size: 0.75rem; font-weight: 700; color: white; white-space: nowrap;
+    }
+    .badge-outline {
+      background: transparent !important; border: 1.5px solid var(--border);
+      color: var(--muted) !important;
+    }
+
+    .empty {
+      text-align: center; padding: 48px 24px; color: var(--muted);
+      font-size: 0.95rem;
+    }
+    .empty-icon { font-size: 2.5rem; margin-bottom: 12px; }
+
+    /* Modal */
+    .modal-backdrop {
+      position: fixed; inset: 0; background: rgba(0,0,0,.45);
+      display: flex; align-items: flex-end; justify-content: center;
+      z-index: 1000; padding: 0;
+    }
+    @media (min-width: 540px) {
+      .modal-backdrop { align-items: center; padding: 16px; }
+    }
+    .modal {
+      background: var(--card); border-radius: var(--radius) var(--radius) 0 0;
+      width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto;
+      padding: 20px; box-shadow: 0 8px 32px rgba(0,0,0,.18);
+    }
+    @media (min-width: 540px) {
+      .modal { border-radius: var(--radius); }
+    }
+    .modal-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 16px; }
+    .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; flex-wrap: wrap; }
+
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; font-size: 0.82rem; font-weight: 600; margin-bottom: 4px; color: var(--text); }
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%; padding: 8px 12px; border-radius: 8px;
+      border: 1.5px solid var(--border); font-size: 0.9rem;
+      background: var(--bg); color: var(--text);
+    }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+      outline: none; border-color: var(--accent);
+    }
+    .form-group textarea { resize: vertical; min-height: 80px; }
+
+    .section-title {
+      font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .06em; color: var(--muted); margin: 16px 0 8px;
+    }
+
+    .timeline { }
+    .tl-row { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+    .tl-row:last-child { border-bottom: none; }
+    .tl-dot { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; color: white; flex-shrink: 0; margin-top: 2px; }
+    .tl-content { flex: 1; min-width: 0; }
+    .tl-meta { font-size: 0.75rem; color: var(--muted); margin-bottom: 2px; }
+    .tl-detail { font-size: 0.88rem; line-height: 1.4; word-break: break-word; }
+
+    .detail-field { margin-bottom: 12px; }
+    .detail-label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-bottom: 3px; }
+    .detail-value { font-size: 0.95rem; }
+
+    .photo-thumb { max-width: 100%; max-height: 220px; border-radius: 8px; margin-top: 6px; border: 1px solid var(--border); }
+
+    .upload-area { margin-top: 6px; }
+    .upload-area input[type=file] { width: 100%; font-size: 0.85rem; }
+
+    .response-area { margin-top: 16px; }
+    .response-area textarea { width: 100%; }
+
+    .board-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+  </style>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="empty"><div class="empty-icon">⏳</div>Loading…</div>
+</div>
+
+<script type="module">
+import {
+  memberColor, initial, esc, hubConfirm, formatRelativeDate,
+} from "/hub-sdk.js";
+import { createFilesHelper } from "/hub-sdk.js";
+import {
+  boardGroup as _boardGroup, isBoard as _isBoard,
+  canIssueViolation as _canIssueViolation,
+  canAcknowledge, canDispute, canRespond,
+  canResolve as _canResolve, canEscalate as _canEscalate,
+  statusLabel, statusColor, categoryIcon, isOverdue,
+} from "./logic.js";
+
+const CONTEXT         = window.__CONTEXT_URL    ?? "";
+const DB              = window.__DB_URL         ?? "";
+const FILES_URL       = window.__FILES_URL      ?? "";
+const APP_ID          = window.__APP_ID         ?? "violation-tracking";
+let ME                = window.__CURRENT_MEMBER ?? null;
+const EVENTS_URL      = window.__EVENTS_URL     ?? "/api/events";
+
+const files = createFilesHelper(FILES_URL);
+
+let members   = [];
+let groups    = [];
+let violations = [];
+let settings  = { board_group_id: null };
+let activeTab = "all";
+let unitFilter = "";
+let modalEl   = null;
+
+// ---- role helpers ----
+function isBoard(m)              { return _isBoard(m, groups, settings.board_group_id); }
+function canIssueViolation()     { return _canIssueViolation(ME, groups, settings.board_group_id); }
+function canResolve(v)           { return _canResolve(v, ME, groups, settings.board_group_id); }
+function canEscalate(v)          { return _canEscalate(v, ME, groups, settings.board_group_id); }
+
+// ---- db ----
+async function db(sql, params = []) {
+  if (!DB) return { rows: [] };
+  const res = await fetch(DB, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ sql, params }),
+  });
+  return res.json();
+}
+
+// ---- data loading ----
+async function loadContext() {
+  if (!CONTEXT) {
+    members = [
+      { id: "m1", name: "Alice Johnson", role: "adult", isAdmin: true },
+      { id: "m2", name: "Bob Smith",     role: "adult" },
+      { id: "m3", name: "Carol Davis",   role: "adult" },
+    ];
+    groups = [
+      { id: "g1", name: "HOA Board", memberIds: ["m1"] },
+    ];
+    ME = members[0]; // demo: act as the board admin
+    return;
+  }
+  try {
+    const res  = await fetch(`${CONTEXT}?keys=family.members,family.groups`);
+    const data = await res.json();
+    members = data["family.members"] ?? [];
+    groups  = data["family.groups"]  ?? [];
+  } catch { members = []; groups = []; }
+}
+
+async function loadSettings() {
+  const { rows } = await db(
+    `SELECT key, value FROM settings WHERE key = 'board_group_id'`
+  );
+  settings.board_group_id = rows[0]?.value || null;
+}
+
+async function loadViolations() {
+  if (!DB) {
+    // Only seed demo data once — preserve any in-session mutations after that.
+    if (!violations.length) {
+      violations = [
+        { id: "v1", unit_id: "m2", issued_by: "m1", category: "landscaping", description: "Lawn not mowed per CC&R §4.2. Grass exceeds 6 inches.", photo_file_id: null, cure_deadline: "2026-06-10", status: "open",         created_at: "2026-05-25T10:00:00Z", updated_at: "2026-05-25T10:00:00Z" },
+        { id: "v2", unit_id: "m2", issued_by: "m1", category: "parking",     description: "Vehicle parked in fire lane (Unit 12B) for 3+ days.",     photo_file_id: null, cure_deadline: "2026-05-28", status: "acknowledged", created_at: "2026-05-20T09:00:00Z", updated_at: "2026-05-22T11:00:00Z" },
+        { id: "v3", unit_id: "m3", issued_by: "m1", category: "noise",       description: "Excessive noise after quiet hours (11pm) on 5/18.",        photo_file_id: null, cure_deadline: "2026-06-01", status: "disputed",     created_at: "2026-05-19T08:00:00Z", updated_at: "2026-05-21T14:00:00Z" },
+        { id: "v4", unit_id: "m3", issued_by: "m1", category: "trash",       description: "Trash bins left at curb 4 days after pickup.",             photo_file_id: null, cure_deadline: "2026-05-15", status: "resolved",     created_at: "2026-05-10T07:00:00Z", updated_at: "2026-05-16T09:00:00Z" },
+      ];
+    }
+    return;
+  }
+  const { rows } = await db(
+    `SELECT * FROM violations ORDER BY created_at DESC`
+  );
+  violations = rows;
+}
+
+async function loadActivity(violationId) {
+  if (!DB) {
+    const demoActivity = {
+      v1: [{ id: "a1", violation_id: "v1", actor_id: "m1", action: "issued",    detail: "",                          created_at: "2026-05-25T10:00:00Z" }],
+      v2: [{ id: "a2", violation_id: "v2", actor_id: "m1", action: "issued",    detail: "",                          created_at: "2026-05-20T09:00:00Z" },
+           { id: "a3", violation_id: "v2", actor_id: "m2", action: "acknowledged", detail: "I understand the concern.", created_at: "2026-05-22T11:00:00Z" }],
+      v3: [{ id: "a4", violation_id: "v3", actor_id: "m1", action: "issued",    detail: "",                          created_at: "2026-05-19T08:00:00Z" },
+           { id: "a5", violation_id: "v3", actor_id: "m3", action: "disputed",  detail: "I was not home that evening. Please review the security footage.", created_at: "2026-05-21T14:00:00Z" }],
+      v4: [{ id: "a6", violation_id: "v4", actor_id: "m1", action: "issued",    detail: "",                          created_at: "2026-05-10T07:00:00Z" },
+           { id: "a7", violation_id: "v4", actor_id: "m1", action: "resolved",  detail: "Bins removed by deadline.",  created_at: "2026-05-16T09:00:00Z" }],
+    };
+    return demoActivity[violationId] ?? [];
+  }
+  const { rows } = await db(
+    `SELECT * FROM activity WHERE violation_id = ? ORDER BY created_at ASC`,
+    [violationId]
+  );
+  return rows;
+}
+
+// ---- activity logging ----
+async function logActivity(violationId, action, detail = "") {
+  const id = crypto.randomUUID();
+  await db(
+    `INSERT INTO activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, ?)`,
+    [id, violationId, ME?.id ?? "system", action, detail, new Date().toISOString()]
+  );
+}
+
+async function notify(title, body) {
+  await fetch("/api/notifications/send", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ title, body, url: `/run/${APP_ID}` }),
+  }).catch(() => {});
+}
+
+// ---- helpers ----
+function memberName(id) {
+  return members.find(m => m.id === id)?.name ?? "Unknown";
+}
+
+function fmt(iso) {
+  if (!iso) return "";
+  try { return formatRelativeDate(iso); } catch { return iso.slice(0, 10); }
+}
+
+function fmtDate(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+function actionLabel(action) {
+  return {
+    issued:       "Issued",
+    acknowledged: "Acknowledged",
+    responded:    "Responded",
+    disputed:     "Disputed",
+    resolved:     "Resolved",
+    escalated:    "Escalated",
+    note_added:   "Note added",
+  }[action] ?? action;
+}
+
+// ---- modal ----
+function openModal(html) {
+  closeModal();
+  modalEl = document.createElement("div");
+  modalEl.className = "modal-backdrop";
+  modalEl.innerHTML = `<div class="modal">${html}</div>`;
+  modalEl.addEventListener("click", e => { if (e.target === modalEl) closeModal(); });
+  document.body.appendChild(modalEl);
+}
+function closeModal() { modalEl?.remove(); modalEl = null; }
+window.closeModal = closeModal;
+
+// ---- filters ----
+function filteredViolations() {
+  let list = violations;
+  if (!isBoard(ME)) {
+    list = list.filter(v => v.unit_id === ME?.id);
+  } else if (unitFilter) {
+    list = list.filter(v => v.unit_id === unitFilter);
+  }
+  if (activeTab !== "all") {
+    list = list.filter(v => v.status === activeTab);
+  }
+  return list;
+}
+
+// ---- render ----
+function render() {
+  const boardView = isBoard(ME);
+  const list = filteredViolations();
+
+  const tabs = boardView
+    ? ["all", "open", "acknowledged", "disputed", "resolved", "escalated"]
+    : ["all", "open", "resolved"];
+
+  const tabsHtml = tabs.map(t =>
+    `<button class="filter-tab ${activeTab === t ? "active" : ""}" onclick="setTab('${t}')">
+      ${t === "all" ? "All" : statusLabel(t)}
+    </button>`
+  ).join("");
+
+  const unitFilterHtml = boardView ? `
+    <div class="unit-filter">
+      <select onchange="setUnitFilter(this.value)">
+        <option value="">All Units</option>
+        ${members.filter(m => !isBoard(m)).map(m =>
+          `<option value="${esc(m.id)}" ${unitFilter === m.id ? "selected" : ""}>${esc(m.name)}</option>`
+        ).join("")}
+      </select>
+    </div>` : "";
+
+  const cardsHtml = list.length === 0
+    ? `<div class="empty"><div class="empty-icon">✅</div>No violations found.</div>`
+    : list.map(v => {
+        const overdue = isOverdue(v);
+        const icon    = categoryIcon(v.category);
+        const color   = statusColor(v.status);
+        const unitName = memberName(v.unit_id);
+        return `
+          <div class="violation-card ${overdue ? "overdue" : ""}" onclick="openDetail('${esc(v.id)}')">
+            <div class="vc-top">
+              <div class="vc-icon">${icon}</div>
+              <div class="vc-body">
+                <div class="vc-title">${esc(v.category.charAt(0).toUpperCase() + v.category.slice(1))} — ${esc(unitName)}</div>
+                <div class="vc-meta">${esc(v.description.slice(0, 80))}${v.description.length > 80 ? "…" : ""}</div>
+              </div>
+            </div>
+            <div class="vc-footer">
+              <span class="badge" style="background:${color}">${statusLabel(v.status)}</span>
+              <span class="badge badge-outline">Deadline: ${fmtDate(v.cure_deadline)}</span>
+              ${overdue ? `<span class="overdue-label">⚠ Overdue</span>` : ""}
+            </div>
+          </div>`;
+      }).join("");
+
+  const settingsBtn = ME?.isAdmin
+    ? `<button class="btn-icon" onclick="openSettingsModal()" title="Settings">⚙️</button>`
+    : "";
+
+  const issueBtn = canIssueViolation()
+    ? `<button class="btn btn-icon" onclick="openIssueModal()" title="Issue Notice">＋</button>`
+    : "";
+
+  const subtitle = boardView ? `${violations.length} total violation${violations.length !== 1 ? "s" : ""}` : "Your notices";
+
+  document.getElementById("app").innerHTML = `
+    <header>
+      <div>
+        <div class="h1" style="font-size:1.2rem;font-weight:700">⚠️ Violation Tracking</div>
+        <div class="sub">${esc(subtitle)}</div>
+      </div>
+      <div class="header-actions">${issueBtn}${settingsBtn}</div>
+    </header>
+    <div class="filters">${tabsHtml}</div>
+    ${unitFilterHtml}
+    <div id="cards">${cardsHtml}</div>
+  `;
+}
+
+// ---- tabs / filters ----
+window.setTab = function(tab) { activeTab = tab; render(); };
+window.setUnitFilter = function(id) { unitFilter = id; render(); };
+
+// ---- issue modal ----
+window.openIssueModal = function() {
+  const memberOpts = members
+    .filter(m => !isBoard(m))
+    .map(m => `<option value="${esc(m.id)}">${esc(m.name)}</option>`)
+    .join("");
+
+  const uploadHtml = FILES_URL ? `
+    <div class="form-group">
+      <label>Photo Evidence (optional)</label>
+      <div class="upload-area"><input type="file" id="f-photo" accept="image/*"></div>
+    </div>` : "";
+
+  openModal(`
+    <div class="modal-title">Issue Violation Notice</div>
+    <div class="form-group">
+      <label>Unit / Homeowner</label>
+      <select id="f-unit"><option value="">Select…</option>${memberOpts}</select>
+    </div>
+    <div class="form-group">
+      <label>Category</label>
+      <select id="f-category">
+        <option value="parking">🚗 Parking</option>
+        <option value="noise">📢 Noise</option>
+        <option value="landscaping">🌿 Landscaping</option>
+        <option value="pets">🐾 Pets</option>
+        <option value="trash">🗑️ Trash / Debris</option>
+        <option value="architectural">🏗️ Architectural</option>
+        <option value="other">📋 Other</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Description</label>
+      <textarea id="f-desc" placeholder="Describe the violation and cite the applicable CC&R section…"></textarea>
+    </div>
+    ${uploadHtml}
+    <div class="form-group">
+      <label>Cure Deadline</label>
+      <input type="date" id="f-deadline" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="submitIssue()">Issue Notice</button>
+    </div>
+  `);
+};
+
+window.submitIssue = async function() {
+  const unitId   = document.getElementById("f-unit")?.value?.trim();
+  const category = document.getElementById("f-category")?.value;
+  const desc     = document.getElementById("f-desc")?.value?.trim();
+  const deadline = document.getElementById("f-deadline")?.value;
+  const photoInput = document.getElementById("f-photo");
+
+  if (!unitId)   { document.getElementById("f-unit").focus(); return; }
+  if (!desc)     { document.getElementById("f-desc").focus(); return; }
+  if (!deadline) { document.getElementById("f-deadline").focus(); return; }
+
+  const btn = modalEl?.querySelector(".modal-actions .btn-primary");
+  if (btn) { btn.disabled = true; btn.textContent = "Issuing…"; }
+
+  try {
+    let photoFileId = null;
+    if (photoInput?.files?.[0]) {
+      const { id } = await files.upload(photoInput.files[0]);
+      photoFileId = id;
+    }
+
+    const id  = crypto.randomUUID();
+    const now = new Date().toISOString();
+    if (!DB) {
+      violations.unshift({ id, unit_id: unitId, issued_by: ME?.id ?? "system", category, description: desc, photo_file_id: photoFileId, cure_deadline: deadline, status: "open", created_at: now, updated_at: now });
+    } else {
+      await db(
+        `INSERT INTO violations (id, unit_id, issued_by, category, description, photo_file_id, cure_deadline, status, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, 'open', ?, ?)`,
+        [id, unitId, ME?.id ?? "system", category, desc, photoFileId, deadline, now, now]
+      );
+    }
+
+    await Promise.all([
+      logActivity(id, "issued", `Category: ${category}`),
+      notify(`Violation Notice`, `A new ${category} violation notice has been issued for ${memberName(unitId)}.`),
+      loadViolations(),
+    ]);
+
+    closeModal();
+    render();
+  } catch (e) {
+    if (btn) { btn.disabled = false; btn.textContent = "Issue Notice"; }
+    throw e;
+  }
+};
+
+// ---- detail modal ----
+window.openDetail = async function(id) {
+  const v = violations.find(x => x.id === id);
+  if (!v) return;
+
+  const activity = await loadActivity(id);
+  renderDetail(v, activity);
+};
+
+function renderDetail(v, activity) {
+  const boardView   = isBoard(ME);
+  const isUnit      = ME?.id === v.unit_id;
+  const overdue     = isOverdue(v);
+  const color       = statusColor(v.status);
+
+  const photoHtml = v.photo_file_id
+    ? `<img class="photo-thumb" src="${esc(files.url(v.photo_file_id))}" alt="Evidence photo">`
+    : "";
+
+  const timelineHtml = activity.map(a => {
+    const actor = memberName(a.actor_id);
+    const bg    = memberColor(a.actor_id, members);
+    const ini   = initial(actor);
+    return `
+      <div class="tl-row">
+        <div class="tl-dot" style="background:${bg}">${esc(ini)}</div>
+        <div class="tl-content">
+          <div class="tl-meta">${esc(actor)} · ${actionLabel(a.action)} · ${fmt(a.created_at)}</div>
+          ${a.detail ? `<div class="tl-detail">${esc(a.detail)}</div>` : ""}
+        </div>
+      </div>`;
+  }).join("") || `<div style="color:var(--muted);font-size:0.85rem">No activity yet.</div>`;
+
+  const memberActions = isUnit && canRespond(v, ME) ? `
+    <div class="section-title">Respond</div>
+    <div class="response-area">
+      <div class="form-group">
+        <textarea id="d-response" placeholder="Add your response…"></textarea>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        ${canAcknowledge(v, ME) ? `<button class="btn btn-sm btn-warning" onclick="submitAcknowledge('${esc(v.id)}')">Acknowledge</button>` : ""}
+        ${canDispute(v, ME)     ? `<button class="btn btn-sm btn-danger"  onclick="submitDispute('${esc(v.id)}')">File Dispute</button>` : ""}
+        <button class="btn btn-sm btn-ghost" onclick="submitResponse('${esc(v.id)}')">Add Response</button>
+      </div>
+    </div>` : "";
+
+  const boardActions = boardView && (canResolve(v) || canEscalate(v)) ? `
+    <div class="section-title">Board Actions</div>
+    <div class="form-group">
+      <textarea id="d-note" placeholder="Internal note (optional)…"></textarea>
+    </div>
+    <div class="board-actions">
+      ${canResolve(v)   ? `<button class="btn btn-sm btn-green"  onclick="submitResolve('${esc(v.id)}')">Mark Resolved</button>` : ""}
+      ${canEscalate(v)  ? `<button class="btn btn-sm btn-purple" onclick="submitEscalate('${esc(v.id)}')">Escalate</button>` : ""}
+      <button class="btn btn-sm btn-ghost" onclick="submitNote('${esc(v.id)}')">Save Note</button>
+    </div>` : "";
+
+  openModal(`
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+      <span style="font-size:1.8rem">${categoryIcon(v.category)}</span>
+      <div>
+        <div class="modal-title" style="margin-bottom:4px">${esc(v.category.charAt(0).toUpperCase() + v.category.slice(1))} Violation</div>
+        <span class="badge" style="background:${color}">${statusLabel(v.status)}</span>
+        ${overdue ? `<span class="overdue-label" style="margin-left:8px">⚠ Overdue</span>` : ""}
+      </div>
+    </div>
+
+    <div class="detail-field">
+      <div class="detail-label">Unit / Homeowner</div>
+      <div class="detail-value">${esc(memberName(v.unit_id))}</div>
+    </div>
+    <div class="detail-field">
+      <div class="detail-label">Issued by</div>
+      <div class="detail-value">${esc(memberName(v.issued_by))} · ${fmt(v.created_at)}</div>
+    </div>
+    <div class="detail-field">
+      <div class="detail-label">Description</div>
+      <div class="detail-value">${esc(v.description)}</div>
+    </div>
+    ${photoHtml}
+    <div class="detail-field" style="margin-top:${photoHtml ? '10px' : '0'}">
+      <div class="detail-label">Cure Deadline</div>
+      <div class="detail-value" style="${overdue ? 'color:#ef4444;font-weight:700' : ''}">${fmtDate(v.cure_deadline)}</div>
+    </div>
+
+    <div class="section-title">Activity</div>
+    <div class="timeline">${timelineHtml}</div>
+
+    ${memberActions}
+    ${boardActions}
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Close</button>
+    </div>
+  `);
+}
+
+// ---- member actions ----
+async function memberStatusAction(violationId, action, detail) {
+  const btn = modalEl?.querySelector(`button[onclick="submit${action.charAt(0).toUpperCase() + action.slice(1)}('${violationId}')"]`);
+  if (btn) { btn.disabled = true; btn.textContent = "Saving…"; }
+  try {
+    const now = new Date().toISOString();
+    let newStatus = action === "acknowledge" ? "acknowledged" : "disputed";
+    if (!DB) {
+      const v = violations.find(x => x.id === violationId);
+      if (v) { v.status = newStatus; v.updated_at = now; }
+    } else {
+      await db(
+        `UPDATE violations SET status = ?, updated_at = ? WHERE id = ?`,
+        [newStatus, now, violationId]
+      );
+    }
+    await Promise.all([
+      logActivity(violationId, newStatus, detail),
+      loadViolations(),
+    ]);
+    closeModal();
+    render();
+    openDetail(violationId);
+  } catch (e) {
+    if (btn) { btn.disabled = false; }
+    throw e;
+  }
+}
+
+window.submitAcknowledge = async function(id) {
+  const detail = document.getElementById("d-response")?.value?.trim() ?? "";
+  await memberStatusAction(id, "acknowledge", detail);
+};
+
+window.submitDispute = async function(id) {
+  const detail = document.getElementById("d-response")?.value?.trim() ?? "";
+  if (!detail) { document.getElementById("d-response")?.focus(); return; }
+  await memberStatusAction(id, "dispute", detail);
+};
+
+window.submitResponse = async function(id) {
+  const detail = document.getElementById("d-response")?.value?.trim() ?? "";
+  if (!detail) { document.getElementById("d-response")?.focus(); return; }
+  const btn = modalEl?.querySelector(`button[onclick="submitResponse('${id}')"]`);
+  if (btn) { btn.disabled = true; btn.textContent = "Saving…"; }
+  try {
+    await logActivity(id, "responded", detail);
+    const activity = await loadActivity(id);
+    const v = violations.find(x => x.id === id);
+    renderDetail(v, activity);
+  } catch (e) {
+    if (btn) { btn.disabled = false; btn.textContent = "Add Response"; }
+    throw e;
+  }
+};
+
+// ---- board actions ----
+async function boardStatusAction(violationId, newStatus) {
+  const note = document.getElementById("d-note")?.value?.trim() ?? "";
+  const btn = modalEl?.querySelector(`button[onclick="submit${newStatus.charAt(0).toUpperCase() + newStatus.slice(1)}('${violationId}')"]`);
+  if (btn) { btn.disabled = true; btn.textContent = "Saving…"; }
+  try {
+    const now = new Date().toISOString();
+    if (!DB) {
+      const v = violations.find(x => x.id === violationId);
+      if (v) { v.status = newStatus; v.updated_at = now; }
+    } else {
+      await db(
+        `UPDATE violations SET status = ?, updated_at = ? WHERE id = ?`,
+        [newStatus, now, violationId]
+      );
+    }
+    await Promise.all([
+      logActivity(violationId, newStatus, note),
+      loadViolations(),
+    ]);
+    closeModal();
+    render();
+    openDetail(violationId);
+  } catch (e) {
+    if (btn) { btn.disabled = false; }
+    throw e;
+  }
+}
+
+window.submitResolve   = async id => boardStatusAction(id, "resolved");
+window.submitEscalate  = async id => boardStatusAction(id, "escalated");
+
+window.submitNote = async function(id) {
+  const note = document.getElementById("d-note")?.value?.trim() ?? "";
+  if (!note) { document.getElementById("d-note")?.focus(); return; }
+  const btn = modalEl?.querySelector(`button[onclick="submitNote('${id}')"]`);
+  if (btn) { btn.disabled = true; btn.textContent = "Saving…"; }
+  try {
+    await logActivity(id, "note_added", note);
+    const activity = await loadActivity(id);
+    const v = violations.find(x => x.id === id);
+    renderDetail(v, activity);
+  } catch (e) {
+    if (btn) { btn.disabled = false; btn.textContent = "Save Note"; }
+    throw e;
+  }
+};
+
+// ---- settings modal ----
+window.openSettingsModal = function() {
+  const groupOpts = groups.map(g =>
+    `<option value="${esc(g.id)}" ${settings.board_group_id === g.id ? "selected" : ""}>${esc(g.name)}</option>`
+  ).join("");
+
+  openModal(`
+    <div class="modal-title">⚙️ Settings</div>
+    <div class="form-group">
+      <label>Board / Issuing Group</label>
+      <select id="s-group">
+        <option value="" ${!settings.board_group_id ? "selected" : ""}>All Admins (default)</option>
+        ${groupOpts}
+      </select>
+      <div style="font-size:0.78rem;color:var(--muted);margin-top:4px">Members of this group can issue violation notices.</div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveSettings()">Save</button>
+    </div>
+  `);
+};
+
+window.saveSettings = async function() {
+  const groupId = document.getElementById("s-group")?.value || null;
+  const btn = modalEl?.querySelector(".modal-actions .btn-primary");
+  if (btn) { btn.disabled = true; btn.textContent = "Saving…"; }
+  try {
+    await db(
+      `INSERT INTO settings (key, value) VALUES ('board_group_id', ?)
+       ON CONFLICT (household_id, key) DO UPDATE SET value = EXCLUDED.value`,
+      [groupId ?? ""]
+    );
+    settings.board_group_id = groupId;
+    closeModal();
+    render();
+  } catch (e) {
+    if (btn) { btn.disabled = false; btn.textContent = "Save"; }
+    throw e;
+  }
+};
+
+// ---- deep link ----
+function handleDeepLink() {
+  const params = new URLSearchParams(window.location.search);
+  const vid = params.get("violationId");
+  if (vid) openDetail(vid);
+}
+
+// ---- init ----
+(async () => {
+  await loadContext();
+  await Promise.all([loadSettings(), loadViolations()]);
+  render();
+  handleDeepLink();
+})();
+</script>
+</body>
+</html>
