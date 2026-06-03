@@ -507,24 +507,24 @@ window.submitIssue = async function() {
 
     const id  = crypto.randomUUID();
     const now = new Date().toISOString();
-    if (!DB) {
-      violations.unshift({ id, unit_id: unitId, issued_by: ME?.id ?? "system", category, description: desc, photo_file_id: photoFileId, cure_deadline: deadline, status: "open", created_at: now, updated_at: now });
-    } else {
-      await db(
+
+    // Optimistic: add to local state, close modal, render immediately
+    violations.unshift({ id, unit_id: unitId, issued_by: ME?.id ?? "system", category,
+      description: desc, photo_file_id: photoFileId, cure_deadline: deadline,
+      status: "open", created_at: now, updated_at: now });
+    closeModal();
+    render();
+
+    // Persist + side effects in background
+    if (DB) {
+      db(
         `INSERT INTO violations (id, unit_id, issued_by, category, description, photo_file_id, cure_deadline, status, created_at, updated_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, 'open', ?, ?)`,
         [id, unitId, ME?.id ?? "system", category, desc, photoFileId, deadline, now, now]
-      );
+      ).catch(() => { violations = violations.filter(v => v.id !== id); render(); });
     }
-
-    await Promise.all([
-      logActivity(id, "issued", `Category: ${category}`),
-      notify(`Violation Notice`, `A new ${category} violation notice has been issued for ${memberName(unitId)}.`),
-      loadViolations(),
-    ]);
-
-    closeModal();
-    render();
+    logActivity(id, "issued", `Category: ${category}`).catch(() => {});
+    notify(`Violation Notice`, `A new ${category} violation notice has been issued for ${memberName(unitId)}.`).catch(() => {});
   } catch (e) {
     if (btn) { btn.disabled = false; btn.textContent = "Issue Notice"; }
     throw e;
@@ -634,22 +634,19 @@ async function memberStatusAction(violationId, action, detail) {
   if (btn) { btn.disabled = true; btn.textContent = "Saving…"; }
   try {
     const now = new Date().toISOString();
-    let newStatus = action === "acknowledge" ? "acknowledged" : "disputed";
-    if (!DB) {
-      const v = violations.find(x => x.id === violationId);
-      if (v) { v.status = newStatus; v.updated_at = now; }
-    } else {
-      await db(
-        `UPDATE violations SET status = ?, updated_at = ? WHERE id = ?`,
-        [newStatus, now, violationId]
-      );
-    }
-    await Promise.all([
-      logActivity(violationId, newStatus, detail),
-      loadViolations(),
-    ]);
+    const newStatus = action === "acknowledge" ? "acknowledged" : "disputed";
+
+    // Optimistic: update local state, close modal, render immediately
+    const v = violations.find(x => x.id === violationId);
+    if (v) { v.status = newStatus; v.updated_at = now; }
     closeModal();
     render();
+
+    // DB write and activity log in parallel; re-open detail once both commit
+    await Promise.all([
+      DB ? db(`UPDATE violations SET status = ?, updated_at = ? WHERE id = ?`, [newStatus, now, violationId]) : Promise.resolve(),
+      logActivity(violationId, newStatus, detail),
+    ]);
     openDetail(violationId);
   } catch (e) {
     if (btn) { btn.disabled = false; }
@@ -691,21 +688,18 @@ async function boardStatusAction(violationId, newStatus) {
   if (btn) { btn.disabled = true; btn.textContent = "Saving…"; }
   try {
     const now = new Date().toISOString();
-    if (!DB) {
-      const v = violations.find(x => x.id === violationId);
-      if (v) { v.status = newStatus; v.updated_at = now; }
-    } else {
-      await db(
-        `UPDATE violations SET status = ?, updated_at = ? WHERE id = ?`,
-        [newStatus, now, violationId]
-      );
-    }
-    await Promise.all([
-      logActivity(violationId, newStatus, note),
-      loadViolations(),
-    ]);
+
+    // Optimistic: update local state, close modal, render immediately
+    const v = violations.find(x => x.id === violationId);
+    if (v) { v.status = newStatus; v.updated_at = now; }
     closeModal();
     render();
+
+    // DB write and activity log in parallel; re-open detail once both commit
+    await Promise.all([
+      DB ? db(`UPDATE violations SET status = ?, updated_at = ? WHERE id = ?`, [newStatus, now, violationId]) : Promise.resolve(),
+      logActivity(violationId, newStatus, note),
+    ]);
     openDetail(violationId);
   } catch (e) {
     if (btn) { btn.disabled = false; }
@@ -783,8 +777,7 @@ function handleDeepLink() {
 
 // ---- init ----
 (async () => {
-  await loadContext();
-  await Promise.all([loadSettings(), loadViolations()]);
+  await Promise.all([loadContext(), loadSettings(), loadViolations()]);
   render();
   handleDeepLink();
 })();
