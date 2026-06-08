@@ -11,6 +11,7 @@
     "reads": ["family.members", "family.groups"],
     "writes": []
   },
+  "exports": ["pending_violations"],
   "permissions": {
     "default_audience": "everyone",
     "requires_approval": true

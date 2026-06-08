@@ -189,6 +189,7 @@ import {
 
 const CONTEXT         = window.__CONTEXT_URL    ?? "";
 const DB              = window.__DB_URL         ?? "";
+const STORE           = window.__STORE_URL      ?? "";
 const FILES_URL       = window.__FILES_URL      ?? "";
 const APP_ID          = window.__APP_ID         ?? "violation-tracking";
 let ME                = window.__CURRENT_MEMBER ?? null;
@@ -248,6 +249,47 @@ async function loadSettings() {
     `SELECT key, value FROM settings WHERE key = 'board_group_id'`
   );
   settings.board_group_id = rows[0]?.value || null;
+}
+
+// Drains violations cross-posted from other apps (e.g. Vehicle & Parking Registry)
+// via the "pending_violations" exported KV key. The source app generates the id
+// up front so its own deep link to this violation works immediately.
+async function processPendingInbox() {
+  if (!STORE) return;
+  try {
+    const res = await fetch(`${STORE}?key=pending_violations`);
+    if (!res.ok) return;
+    const { value } = await res.json();
+    if (!value) return;
+    const pending = JSON.parse(value).items ?? [];
+    if (!pending.length) return;
+
+    const now = new Date().toISOString();
+    for (const item of pending) {
+      const id           = typeof item.id === "string" ? item.id.trim() : "";
+      const unitId       = typeof item.unit_id === "string" ? item.unit_id.trim() : "";
+      const description  = typeof item.description === "string" ? item.description.trim() : "";
+      const cureDeadline = typeof item.cure_deadline === "string" ? item.cure_deadline.trim() : "";
+      if (!id || !unitId || !description || !cureDeadline) continue;
+
+      const category = typeof item.category === "string" && item.category ? item.category : "other";
+      const issuedBy = typeof item.issued_by === "string" && item.issued_by ? item.issued_by : "system";
+
+      await db(
+        `INSERT INTO violations (id, unit_id, issued_by, category, description, photo_file_id, cure_deadline, status, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, NULL, ?, 'open', ?, ?)
+         ON CONFLICT (household_id, id) DO NOTHING`,
+        [id, unitId, issuedBy, category, description, cureDeadline, now, now]
+      ).catch(() => {});
+
+      await db(
+        `INSERT INTO activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, 'issued', ?, ?)`,
+        [crypto.randomUUID(), id, issuedBy, "Auto-created from Vehicle & Parking Registry", now]
+      ).catch(() => {});
+    }
+
+    await fetch(`${STORE}?key=pending_violations`, { method: "DELETE" });
+  } catch { /* non-fatal */ }
 }
 
 async function loadViolations() {
@@ -777,7 +819,9 @@ function handleDeepLink() {
 
 // ---- init ----
 (async () => {
-  await Promise.all([loadContext(), loadSettings(), loadViolations()]);
+  await Promise.all([loadContext(), loadSettings()]);
+  await processPendingInbox();
+  await loadViolations();
   render();
   handleDeepLink();
 })();
