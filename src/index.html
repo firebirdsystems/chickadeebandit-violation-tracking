@@ -205,6 +205,9 @@ let activeTab = "all";
 let unitFilter = "";
 let modalEl   = null;
 
+let memberMap = new Map();
+const activityCache = new Map();
+
 // ---- role helpers ----
 function isBoard(m)              { return _isBoard(m, groups, settings.board_group_id); }
 function canIssueViolation()     { return _canIssueViolation(ME, groups, settings.board_group_id); }
@@ -234,6 +237,7 @@ async function loadContext() {
       { id: "g1", name: "HOA Board", memberIds: ["m1"] },
     ];
     ME = members[0]; // demo: act as the board admin
+    memberMap = new Map(members.map(m => [m.id, m]));
     return;
   }
   try {
@@ -242,6 +246,7 @@ async function loadContext() {
     members = data["family.members"] ?? [];
     groups  = data["family.groups"]  ?? [];
   } catch { members = []; groups = []; }
+  memberMap = new Map(members.map(m => [m.id, m]));
 }
 
 async function loadSettings() {
@@ -312,6 +317,8 @@ async function loadViolations() {
 }
 
 async function loadActivity(violationId) {
+  if (activityCache.has(violationId)) return activityCache.get(violationId);
+  let result;
   if (!DB) {
     const demoActivity = {
       v1: [{ id: "a1", violation_id: "v1", actor_id: "m1", action: "issued",    detail: "",                          created_at: "2026-05-25T10:00:00Z" }],
@@ -322,17 +329,21 @@ async function loadActivity(violationId) {
       v4: [{ id: "a6", violation_id: "v4", actor_id: "m1", action: "issued",    detail: "",                          created_at: "2026-05-10T07:00:00Z" },
            { id: "a7", violation_id: "v4", actor_id: "m1", action: "resolved",  detail: "Bins removed by deadline.",  created_at: "2026-05-16T09:00:00Z" }],
     };
-    return demoActivity[violationId] ?? [];
+    result = demoActivity[violationId] ?? [];
+  } else {
+    const { rows } = await db(
+      `SELECT * FROM activity WHERE violation_id = ? ORDER BY created_at ASC`,
+      [violationId]
+    );
+    result = rows;
   }
-  const { rows } = await db(
-    `SELECT * FROM activity WHERE violation_id = ? ORDER BY created_at ASC`,
-    [violationId]
-  );
-  return rows;
+  activityCache.set(violationId, result);
+  return result;
 }
 
 // ---- activity logging ----
 async function logActivity(violationId, action, detail = "") {
+  activityCache.delete(violationId);
   const id = crypto.randomUUID();
   await db(
     `INSERT INTO activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, ?)`,
@@ -350,7 +361,7 @@ async function notify(title, body) {
 
 // ---- helpers ----
 function memberName(id) {
-  return members.find(m => m.id === id)?.name ?? "Unknown";
+  return memberMap.get(id)?.name ?? "Unknown";
 }
 
 function fmt(iso) {
