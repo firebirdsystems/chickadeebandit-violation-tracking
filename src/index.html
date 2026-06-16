@@ -251,7 +251,7 @@ async function loadContext() {
 
 async function loadSettings() {
   const { rows } = await db(
-    `SELECT key, value FROM settings WHERE key = 'board_group_id'`
+    `SELECT key, value FROM app_violation_tracking__settings WHERE key = 'board_group_id'`
   );
   settings.board_group_id = rows[0]?.value || null;
 }
@@ -281,14 +281,14 @@ async function processPendingInbox() {
       const issuedBy = typeof item.issued_by === "string" && item.issued_by ? item.issued_by : "system";
 
       await db(
-        `INSERT INTO violations (id, unit_id, issued_by, category, description, photo_file_id, cure_deadline, status, created_at, updated_at)
+        `INSERT INTO app_violation_tracking__violations (id, unit_id, issued_by, category, description, photo_file_id, cure_deadline, status, created_at, updated_at)
          VALUES (?, ?, ?, ?, ?, NULL, ?, 'open', ?, ?)
-         ON CONFLICT (household_id, id) DO NOTHING`,
+         ON CONFLICT (id) DO NOTHING`,
         [id, unitId, issuedBy, category, description, cureDeadline, now, now]
       ).catch(() => {});
 
       await db(
-        `INSERT INTO activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, 'issued', ?, ?)`,
+        `INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, 'issued', ?, ?)`,
         [crypto.randomUUID(), id, issuedBy, "Auto-created from Vehicle & Parking Registry", now]
       ).catch(() => {});
     }
@@ -311,7 +311,7 @@ async function loadViolations() {
     return;
   }
   const { rows } = await db(
-    `SELECT * FROM violations ORDER BY created_at DESC`
+    `SELECT * FROM app_violation_tracking__violations ORDER BY created_at DESC`
   );
   violations = rows;
 }
@@ -332,7 +332,7 @@ async function loadActivity(violationId) {
     result = demoActivity[violationId] ?? [];
   } else {
     const { rows } = await db(
-      `SELECT * FROM activity WHERE violation_id = ? ORDER BY created_at ASC`,
+      `SELECT * FROM app_violation_tracking__activity WHERE violation_id = ? ORDER BY created_at ASC`,
       [violationId]
     );
     result = rows;
@@ -346,7 +346,7 @@ async function logActivity(violationId, action, detail = "") {
   activityCache.delete(violationId);
   const id = crypto.randomUUID();
   await db(
-    `INSERT INTO activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, ?)`,
     [id, violationId, ME?.id ?? "system", action, detail, new Date().toISOString()]
   );
 }
@@ -571,7 +571,7 @@ window.submitIssue = async function() {
     // Persist + side effects in background
     if (DB) {
       db(
-        `INSERT INTO violations (id, unit_id, issued_by, category, description, photo_file_id, cure_deadline, status, created_at, updated_at)
+        `INSERT INTO app_violation_tracking__violations (id, unit_id, issued_by, category, description, photo_file_id, cure_deadline, status, created_at, updated_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, 'open', ?, ?)`,
         [id, unitId, ME?.id ?? "system", category, desc, photoFileId, deadline, now, now]
       ).catch(() => { violations = violations.filter(v => v.id !== id); render(); });
@@ -697,7 +697,7 @@ async function memberStatusAction(violationId, action, detail) {
 
     // DB write and activity log in parallel; re-open detail once both commit
     await Promise.all([
-      DB ? db(`UPDATE violations SET status = ?, updated_at = ? WHERE id = ?`, [newStatus, now, violationId]) : Promise.resolve(),
+      DB ? db(`UPDATE app_violation_tracking__violations SET status = ?, updated_at = ? WHERE id = ?`, [newStatus, now, violationId]) : Promise.resolve(),
       logActivity(violationId, newStatus, detail),
     ]);
     openDetail(violationId);
@@ -750,7 +750,7 @@ async function boardStatusAction(violationId, newStatus) {
 
     // DB write and activity log in parallel; re-open detail once both commit
     await Promise.all([
-      DB ? db(`UPDATE violations SET status = ?, updated_at = ? WHERE id = ?`, [newStatus, now, violationId]) : Promise.resolve(),
+      DB ? db(`UPDATE app_violation_tracking__violations SET status = ?, updated_at = ? WHERE id = ?`, [newStatus, now, violationId]) : Promise.resolve(),
       logActivity(violationId, newStatus, note),
     ]);
     openDetail(violationId);
@@ -808,8 +808,8 @@ window.saveSettings = async function() {
   if (btn) { btn.disabled = true; btn.textContent = "Saving…"; }
   try {
     await db(
-      `INSERT INTO settings (key, value) VALUES ('board_group_id', ?)
-       ON CONFLICT (household_id, key) DO UPDATE SET value = EXCLUDED.value`,
+      `INSERT INTO app_violation_tracking__settings (key, value) VALUES ('board_group_id', ?)
+       ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`,
       [groupId ?? ""]
     );
     settings.board_group_id = groupId;

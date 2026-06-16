@@ -8,8 +8,7 @@ SELECT
   v.cure_deadline,
   v.status,
   v.created_at
-FROM violations v
-WHERE v.household_id = current_setting('app.household_id', true)::uuid
-  AND v.status IN ('open', 'acknowledged', 'disputed')
+FROM app_violation_tracking__violations v
+WHERE v.status IN ('open', 'acknowledged', 'disputed')
 ORDER BY v.cure_deadline ASC, v.created_at ASC
 LIMIT 200

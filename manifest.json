@@ -17,6 +17,20 @@
     "requires_approval": true
   },
   "storage": "db",
+  "row_policies": {
+    "violations": {
+      "kind": "owner_only",
+      "member_column": "unit_id",
+      "adults_bypass": false,
+      "bypass_group_setting": { "settings_table": "settings", "settings_key": "board_group_id" }
+    },
+    "activity": {
+      "kind": "inherit_visibility",
+      "fk_column": "violation_id",
+      "parent_table": "violations",
+      "writer_column": "actor_id"
+    }
+  },
   "nav": { "label": "Violations" },
   "icon": "⚠️",
   "ai_access": {

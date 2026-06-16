@@ -9,7 +9,6 @@ SELECT
   v.status,
   v.created_at,
   v.updated_at
-FROM violations v
-WHERE v.household_id = current_setting('app.household_id', true)::uuid
+FROM app_violation_tracking__violations v
 ORDER BY v.created_at DESC
 LIMIT 200
