@@ -190,6 +190,7 @@ import {
 const CONTEXT         = window.__CONTEXT_URL    ?? "";
 const DB              = window.__DB_URL         ?? "";
 const STORE           = window.__STORE_URL      ?? "";
+const ADMIN_CONFIG    = window.__ADMIN_CONFIG_URL ?? "";
 const FILES_URL       = window.__FILES_URL      ?? "";
 const APP_ID          = window.__APP_ID         ?? "violation-tracking";
 let ME                = window.__CURRENT_MEMBER ?? null;
@@ -222,7 +223,11 @@ async function db(sql, params = []) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ sql, params }),
   });
-  return res.json();
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok || body.error) {
+    throw new Error(body.error ?? `Database request failed (${res.status})`);
+  }
+  return body;
 }
 
 // ---- data loading ----
@@ -260,7 +265,7 @@ async function loadSettings() {
 // via the "pending_violations" exported KV key. The source app generates the id
 // up front so its own deep link to this violation works immediately.
 async function processPendingInbox() {
-  if (!STORE) return;
+  if (!STORE || !isBoard(ME)) return;
   try {
     const res = await fetch(`${STORE}?key=pending_violations`);
     if (!res.ok) return;
@@ -277,23 +282,27 @@ async function processPendingInbox() {
       const cureDeadline = typeof item.cure_deadline === "string" ? item.cure_deadline.trim() : "";
       if (!id || !unitId || !description || !cureDeadline) continue;
 
-      const category = typeof item.category === "string" && item.category ? item.category : "other";
-      const issuedBy = typeof item.issued_by === "string" && item.issued_by ? item.issued_by : "system";
+      const category = ["parking", "noise", "landscaping", "pets", "trash", "architectural", "other"]
+        .includes(item.category) ? item.category : "other";
+      const issuedBy = ME?.id ?? "system";
 
       await db(
         `INSERT INTO app_violation_tracking__violations (id, unit_id, issued_by, category, description, photo_file_id, cure_deadline, status, created_at, updated_at)
          VALUES (?, ?, ?, ?, ?, NULL, ?, 'open', ?, ?)
          ON CONFLICT (id) DO NOTHING`,
         [id, unitId, issuedBy, category, description, cureDeadline, now, now]
-      ).catch(() => {});
+      );
 
       await db(
-        `INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, 'issued', ?, ?)`,
-        [crypto.randomUUID(), id, issuedBy, "Auto-created from Vehicle & Parking Registry", now]
-      ).catch(() => {});
+        `INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at)
+         VALUES (?, ?, ?, 'issued', ?, ?)
+         ON CONFLICT (id) DO NOTHING`,
+        [`imported:${id}`, id, issuedBy, "Auto-created from Vehicle & Parking Registry", now]
+      );
     }
 
-    await fetch(`${STORE}?key=pending_violations`, { method: "DELETE" });
+    const deleteRes = await fetch(`${STORE}?key=pending_violations`, { method: "DELETE" });
+    if (!deleteRes.ok) throw new Error(`Unable to clear pending violations (${deleteRes.status})`);
   } catch { /* non-fatal */ }
 }
 
@@ -790,7 +799,7 @@ window.openSettingsModal = function() {
     <div class="form-group">
       <label>Board / Issuing Group</label>
       <select id="s-group">
-        <option value="" ${!settings.board_group_id ? "selected" : ""}>All Admins (default)</option>
+        <option value="" ${!settings.board_group_id ? "selected" : ""}>— none —</option>
         ${groupOpts}
       </select>
       <div style="font-size:0.78rem;color:var(--muted);margin-top:4px">Members of this group can issue violation notices.</div>
@@ -807,11 +816,15 @@ window.saveSettings = async function() {
   const btn = modalEl?.querySelector(".modal-actions .btn-primary");
   if (btn) { btn.disabled = true; btn.textContent = "Saving…"; }
   try {
-    await db(
-      `INSERT INTO app_violation_tracking__settings (key, value) VALUES ('board_group_id', ?)
-       ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`,
-      [groupId ?? ""]
-    );
+    const res = await fetch(ADMIN_CONFIG, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key: "board_group_id", value: groupId ?? "" }),
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error ?? `Save failed (${res.status})`);
+    }
     settings.board_group_id = groupId;
     closeModal();
     render();

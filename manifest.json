@@ -18,6 +18,7 @@
   },
   "storage": "db",
   "row_policies": {
+    "settings": { "kind": "app_config" },
     "violations": {
       "kind": "owner_only",
       "member_column": "unit_id",
@@ -29,6 +30,34 @@
       "fk_column": "violation_id",
       "parent_table": "violations",
       "writer_column": "actor_id"
+    }
+  },
+  "admin_config": {
+    "settings_table": "settings",
+    "keys": ["board_group_id"]
+  },
+  "export_acls": {
+    "pending_violations": {
+      "require_group_setting": {
+        "settings_table": "settings",
+        "settings_key": "board_group_id"
+      }
+    }
+  },
+  "store_acls": {
+    "pending_violations": {
+      "read": {
+        "require_group_setting": {
+          "settings_table": "settings",
+          "settings_key": "board_group_id"
+        }
+      },
+      "write": {
+        "require_group_setting": {
+          "settings_table": "settings",
+          "settings_key": "board_group_id"
+        }
+      }
     }
   },
   "nav": { "label": "Violations" },

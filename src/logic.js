@@ -7,9 +7,8 @@ export function boardGroup(groups, boardGroupId) {
 
 export function isBoard(member, groups, boardGroupId) {
   if (!member) return false;
-  if (member.isAdmin) return true;
   const g = boardGroup(groups, boardGroupId);
-  if (!g) return member.role === "board";
+  if (!g) return false;
   return Array.isArray(g.memberIds) && g.memberIds.includes(member.id);
 }
 

@@ -29,8 +29,8 @@ describe("boardGroup", () => {
 
 // --- isBoard ---
 describe("isBoard", () => {
-  it("admins are always board", () => {
-    expect(isBoard(admin, groups, null)).toBe(true);
+  it("admins still require membership in the configured group", () => {
+    expect(isBoard(admin, groups, null)).toBe(false);
   });
   it("group member is board when group is configured", () => {
     expect(isBoard(boardM, groups, "g1")).toBe(true);
@@ -38,8 +38,8 @@ describe("isBoard", () => {
   it("non-group member is not board when group is configured", () => {
     expect(isBoard(member1, groups, "g1")).toBe(false);
   });
-  it("falls back to role===board when no group configured", () => {
-    expect(isBoard(boardM, groups, null)).toBe(true);
+  it("fails closed when no group is configured", () => {
+    expect(isBoard(boardM, groups, null)).toBe(false);
     expect(isBoard(member1, groups, null)).toBe(false);
   });
   it("returns false for null member", () => {
