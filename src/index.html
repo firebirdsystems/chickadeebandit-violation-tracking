@@ -207,13 +207,40 @@ let unitFilter = "";
 let modalEl   = null;
 
 let memberMap = new Map();
-const activityCache = new Map();
+let allActivity = [];
 
 // ---- role helpers ----
 function isBoard(m)              { return _isBoard(m, groups, settings.board_group_id); }
 function canIssueViolation()     { return _canIssueViolation(ME, groups, settings.board_group_id); }
 function canResolve(v)           { return _canResolve(v, ME, groups, settings.board_group_id); }
 function canEscalate(v)          { return _canEscalate(v, ME, groups, settings.board_group_id); }
+
+// ---- status derivation ----
+// The board owns the authoritative lifecycle (open → resolved/escalated), written
+// only to the `violations` row (which is now board-only writable). A homeowner's
+// acknowledge/dispute is recorded as an `activity` row instead — they cannot write
+// the violations row — and surfaced here as the *effective* status. Terminal states
+// are honored ONLY from the board-written `violations.status`, so a homeowner can't
+// fabricate "resolved"/"escalated" by inserting an activity row.
+function activityFor(violationId) {
+  return allActivity
+    .filter(a => a.violation_id === violationId)
+    .sort((a, b) => (a.created_at < b.created_at ? -1 : a.created_at > b.created_at ? 1 : 0));
+}
+function effectiveStatus(v) {
+  if (v.status === "resolved" || v.status === "escalated") return v.status;
+  const resp = activityFor(v.id).filter(
+    a => a.actor_id === v.unit_id && (a.action === "acknowledged" || a.action === "disputed")
+  );
+  return resp.length ? resp[resp.length - 1].action : "open";
+}
+function withEffStatus(v) { return { ...v, status: effectiveStatus(v) }; }
+
+// Safe interpolation into an inline on* handler's JS-string argument. HTML escaping
+// alone is insufficient: the browser decodes entities before compiling the handler,
+// so a single quote would break out. JSON.stringify + esc() produces a properly
+// quoted, attribute-safe literal.
+function jsArg(value) { return esc(JSON.stringify(String(value))); }
 
 // ---- db ----
 async function db(sql, params = []) {
@@ -325,47 +352,71 @@ async function loadViolations() {
   violations = rows;
 }
 
-async function loadActivity(violationId) {
-  if (activityCache.has(violationId)) return activityCache.get(violationId);
-  let result;
+// Load every activity row visible to the caller (the row policy scopes it: a
+// homeowner sees only their own violations' activity, the board sees all). One
+// query feeds both the per-violation timeline and the effective-status derivation.
+async function loadAllActivity() {
   if (!DB) {
-    const demoActivity = {
-      v1: [{ id: "a1", violation_id: "v1", actor_id: "m1", action: "issued",    detail: "",                          created_at: "2026-05-25T10:00:00Z" }],
-      v2: [{ id: "a2", violation_id: "v2", actor_id: "m1", action: "issued",    detail: "",                          created_at: "2026-05-20T09:00:00Z" },
-           { id: "a3", violation_id: "v2", actor_id: "m2", action: "acknowledged", detail: "I understand the concern.", created_at: "2026-05-22T11:00:00Z" }],
-      v3: [{ id: "a4", violation_id: "v3", actor_id: "m1", action: "issued",    detail: "",                          created_at: "2026-05-19T08:00:00Z" },
-           { id: "a5", violation_id: "v3", actor_id: "m3", action: "disputed",  detail: "I was not home that evening. Please review the security footage.", created_at: "2026-05-21T14:00:00Z" }],
-      v4: [{ id: "a6", violation_id: "v4", actor_id: "m1", action: "issued",    detail: "",                          created_at: "2026-05-10T07:00:00Z" },
-           { id: "a7", violation_id: "v4", actor_id: "m1", action: "resolved",  detail: "Bins removed by deadline.",  created_at: "2026-05-16T09:00:00Z" }],
-    };
-    result = demoActivity[violationId] ?? [];
-  } else {
-    const { rows } = await db(
-      `SELECT * FROM app_violation_tracking__activity WHERE violation_id = ? ORDER BY created_at ASC`,
-      [violationId]
-    );
-    result = rows;
+    allActivity = [
+      { id: "a1", violation_id: "v1", actor_id: "m1", action: "issued",       detail: "",                          created_at: "2026-05-25T10:00:00Z" },
+      { id: "a2", violation_id: "v2", actor_id: "m1", action: "issued",       detail: "",                          created_at: "2026-05-20T09:00:00Z" },
+      { id: "a3", violation_id: "v2", actor_id: "m2", action: "acknowledged", detail: "I understand the concern.", created_at: "2026-05-22T11:00:00Z" },
+      { id: "a4", violation_id: "v3", actor_id: "m1", action: "issued",       detail: "",                          created_at: "2026-05-19T08:00:00Z" },
+      { id: "a5", violation_id: "v3", actor_id: "m3", action: "disputed",     detail: "I was not home that evening. Please review the security footage.", created_at: "2026-05-21T14:00:00Z" },
+      { id: "a6", violation_id: "v4", actor_id: "m1", action: "issued",       detail: "",                          created_at: "2026-05-10T07:00:00Z" },
+      { id: "a7", violation_id: "v4", actor_id: "m1", action: "resolved",     detail: "Bins removed by deadline.", created_at: "2026-05-16T09:00:00Z" },
+    ];
+    return;
   }
-  activityCache.set(violationId, result);
-  return result;
+  const { rows } = await db(
+    `SELECT * FROM app_violation_tracking__activity ORDER BY created_at ASC`
+  );
+  allActivity = rows;
 }
+
+function loadActivity(violationId) { return activityFor(violationId); }
 
 // ---- activity logging ----
+// Optimistically appends locally, then persists; reverts the local row on failure.
 async function logActivity(violationId, action, detail = "") {
-  activityCache.delete(violationId);
-  const id = crypto.randomUUID();
-  await db(
-    `INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, ?)`,
-    [id, violationId, ME?.id ?? "system", action, detail, new Date().toISOString()]
-  );
+  const row = {
+    id: crypto.randomUUID(),
+    violation_id: violationId,
+    actor_id: ME?.id ?? "system",
+    action,
+    detail,
+    created_at: new Date().toISOString(),
+  };
+  allActivity.push(row);
+  if (!DB) return;
+  try {
+    await db(
+      `INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, ?)`,
+      [row.id, row.violation_id, row.actor_id, row.action, row.detail, row.created_at]
+    );
+  } catch (e) {
+    allActivity = allActivity.filter(a => a.id !== row.id);
+    throw e;
+  }
 }
 
-async function notify(title, body) {
+// `audience` defaults to "all" (the whole household). A violation is only readable
+// by the cited unit + the board, so issue notices MUST scope the audience to those
+// members — a household-wide push would reveal who was cited (and for what) to
+// everyone. Pass an explicit member-id array for restricted content.
+async function notify(title, body, audience = "all") {
   await fetch(window.__NOTIFY_URL ?? "/api/notifications/send", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ title, body, url: `/run/${APP_ID}` }),
+    body: JSON.stringify({ title, body, url: `/run/${APP_ID}`, audience }),
   }).catch(() => {});
+}
+
+// Members who may see a violation: the cited unit plus the board group.
+function violationAudience(unitId) {
+  const board = groups.find(g => g.id === settings.board_group_id);
+  const boardIds = Array.isArray(board?.memberIds) ? board.memberIds : [];
+  return [...new Set([unitId, ...boardIds].filter(Boolean))];
 }
 
 // ---- helpers ----
@@ -417,7 +468,7 @@ function filteredViolations() {
     list = list.filter(v => v.unit_id === unitFilter);
   }
   if (activeTab !== "all") {
-    list = list.filter(v => v.status === activeTab);
+    list = list.filter(v => effectiveStatus(v) === activeTab);
   }
   return list;
 }
@@ -450,12 +501,13 @@ function render() {
   const cardsHtml = list.length === 0
     ? `<div class="empty"><div class="empty-icon">✅</div>No violations found.</div>`
     : list.map(v => {
-        const overdue = isOverdue(v);
+        const eff     = effectiveStatus(v);
+        const overdue = isOverdue({ ...v, status: eff });
         const icon    = categoryIcon(v.category);
-        const color   = statusColor(v.status);
+        const color   = statusColor(eff);
         const unitName = memberName(v.unit_id);
         return `
-          <div class="violation-card ${overdue ? "overdue" : ""}" onclick="openDetail('${esc(v.id)}')">
+          <div class="violation-card ${overdue ? "overdue" : ""}" onclick="openDetail(${jsArg(v.id)})">
             <div class="vc-top">
               <div class="vc-icon">${icon}</div>
               <div class="vc-body">
@@ -464,7 +516,7 @@ function render() {
               </div>
             </div>
             <div class="vc-footer">
-              <span class="badge" style="background:${color}">${statusLabel(v.status)}</span>
+              <span class="badge" style="background:${color}">${statusLabel(eff)}</span>
               <span class="badge badge-outline">Deadline: ${fmtDate(v.cure_deadline)}</span>
               ${overdue ? `<span class="overdue-label">⚠ Overdue</span>` : ""}
             </div>
@@ -586,7 +638,7 @@ window.submitIssue = async function() {
       ).catch(() => { violations = violations.filter(v => v.id !== id); render(); });
     }
     logActivity(id, "issued", `Category: ${category}`).catch(() => {});
-    notify(`Violation Notice`, `A new ${category} violation notice has been issued for ${memberName(unitId)}.`).catch(() => {});
+    notify(`Violation Notice`, `A new ${category} violation notice has been issued for ${memberName(unitId)}.`, violationAudience(unitId)).catch(() => {});
   } catch (e) {
     if (btn) { btn.disabled = false; btn.textContent = "Issue Notice"; }
     throw e;
@@ -605,8 +657,9 @@ window.openDetail = async function(id) {
 function renderDetail(v, activity) {
   const boardView   = isBoard(ME);
   const isUnit      = ME?.id === v.unit_id;
-  const overdue     = isOverdue(v);
-  const color       = statusColor(v.status);
+  const ev          = withEffStatus(v);
+  const overdue     = isOverdue(ev);
+  const color       = statusColor(ev.status);
 
   const photoHtml = v.photo_file_id
     ? `<img class="photo-thumb" src="${esc(files.url(v.photo_file_id))}" alt="Evidence photo">`
@@ -626,28 +679,28 @@ function renderDetail(v, activity) {
       </div>`;
   }).join("") || `<div style="color:var(--muted);font-size:0.85rem">No activity yet.</div>`;
 
-  const memberActions = isUnit && canRespond(v, ME) ? `
+  const memberActions = isUnit && canRespond(ev, ME) ? `
     <div class="section-title">Respond</div>
     <div class="response-area">
       <div class="form-group">
         <textarea id="d-response" placeholder="Add your response…"></textarea>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        ${canAcknowledge(v, ME) ? `<button class="btn btn-sm btn-warning" onclick="submitAcknowledge('${esc(v.id)}')">Acknowledge</button>` : ""}
-        ${canDispute(v, ME)     ? `<button class="btn btn-sm btn-danger"  onclick="submitDispute('${esc(v.id)}')">File Dispute</button>` : ""}
-        <button class="btn btn-sm btn-ghost" onclick="submitResponse('${esc(v.id)}')">Add Response</button>
+        ${canAcknowledge(ev, ME) ? `<button class="btn btn-sm btn-warning" onclick="submitAcknowledge(${jsArg(v.id)}, this)">Acknowledge</button>` : ""}
+        ${canDispute(ev, ME)     ? `<button class="btn btn-sm btn-danger"  onclick="submitDispute(${jsArg(v.id)}, this)">File Dispute</button>` : ""}
+        <button class="btn btn-sm btn-ghost" onclick="submitResponse(${jsArg(v.id)}, this)">Add Response</button>
       </div>
     </div>` : "";
 
-  const boardActions = boardView && (canResolve(v) || canEscalate(v)) ? `
+  const boardActions = boardView && (canResolve(ev) || canEscalate(ev)) ? `
     <div class="section-title">Board Actions</div>
     <div class="form-group">
       <textarea id="d-note" placeholder="Internal note (optional)…"></textarea>
     </div>
     <div class="board-actions">
-      ${canResolve(v)   ? `<button class="btn btn-sm btn-green"  onclick="submitResolve('${esc(v.id)}')">Mark Resolved</button>` : ""}
-      ${canEscalate(v)  ? `<button class="btn btn-sm btn-purple" onclick="submitEscalate('${esc(v.id)}')">Escalate</button>` : ""}
-      <button class="btn btn-sm btn-ghost" onclick="submitNote('${esc(v.id)}')">Save Note</button>
+      ${canResolve(ev)   ? `<button class="btn btn-sm btn-green"  onclick="submitResolve(${jsArg(v.id)}, this)">Mark Resolved</button>` : ""}
+      ${canEscalate(ev)  ? `<button class="btn btn-sm btn-purple" onclick="submitEscalate(${jsArg(v.id)}, this)">Escalate</button>` : ""}
+      <button class="btn btn-sm btn-ghost" onclick="submitNote(${jsArg(v.id)}, this)">Save Note</button>
     </div>` : "";
 
   openModal(`
@@ -655,7 +708,7 @@ function renderDetail(v, activity) {
       <span style="font-size:1.8rem">${categoryIcon(v.category)}</span>
       <div>
         <div class="modal-title" style="margin-bottom:4px">${esc(v.category.charAt(0).toUpperCase() + v.category.slice(1))} Violation</div>
-        <span class="badge" style="background:${color}">${statusLabel(v.status)}</span>
+        <span class="badge" style="background:${color}">${statusLabel(ev.status)}</span>
         ${overdue ? `<span class="overdue-label" style="margin-left:8px">⚠ Overdue</span>` : ""}
       </div>
     </div>
@@ -691,24 +744,16 @@ function renderDetail(v, activity) {
 }
 
 // ---- member actions ----
-async function memberStatusAction(violationId, action, detail) {
-  const btn = modalEl?.querySelector(`button[onclick="submit${action.charAt(0).toUpperCase() + action.slice(1)}('${violationId}')"]`);
+// A homeowner's acknowledge/dispute is recorded ONLY as an activity row — they
+// cannot (and must not) write the board-authoritative `violations` row. The
+// displayed status is derived from that activity by effectiveStatus().
+async function memberStatusAction(violationId, action, detail, btn) {
   if (btn) { btn.disabled = true; btn.textContent = "Saving…"; }
   try {
-    const now = new Date().toISOString();
-    const newStatus = action === "acknowledge" ? "acknowledged" : "disputed";
-
-    // Optimistic: update local state, close modal, render immediately
-    const v = violations.find(x => x.id === violationId);
-    if (v) { v.status = newStatus; v.updated_at = now; }
+    const logAction = action === "acknowledge" ? "acknowledged" : "disputed";
     closeModal();
+    await logActivity(violationId, logAction, detail);
     render();
-
-    // DB write and activity log in parallel; re-open detail once both commit
-    await Promise.all([
-      DB ? db(`UPDATE app_violation_tracking__violations SET status = ?, updated_at = ? WHERE id = ?`, [newStatus, now, violationId]) : Promise.resolve(),
-      logActivity(violationId, newStatus, detail),
-    ]);
     openDetail(violationId);
   } catch (e) {
     if (btn) { btn.disabled = false; }
@@ -716,27 +761,25 @@ async function memberStatusAction(violationId, action, detail) {
   }
 }
 
-window.submitAcknowledge = async function(id) {
+window.submitAcknowledge = async function(id, btn) {
   const detail = document.getElementById("d-response")?.value?.trim() ?? "";
-  await memberStatusAction(id, "acknowledge", detail);
+  await memberStatusAction(id, "acknowledge", detail, btn);
 };
 
-window.submitDispute = async function(id) {
+window.submitDispute = async function(id, btn) {
   const detail = document.getElementById("d-response")?.value?.trim() ?? "";
   if (!detail) { document.getElementById("d-response")?.focus(); return; }
-  await memberStatusAction(id, "dispute", detail);
+  await memberStatusAction(id, "dispute", detail, btn);
 };
 
-window.submitResponse = async function(id) {
+window.submitResponse = async function(id, btn) {
   const detail = document.getElementById("d-response")?.value?.trim() ?? "";
   if (!detail) { document.getElementById("d-response")?.focus(); return; }
-  const btn = modalEl?.querySelector(`button[onclick="submitResponse('${id}')"]`);
   if (btn) { btn.disabled = true; btn.textContent = "Saving…"; }
   try {
     await logActivity(id, "responded", detail);
-    const activity = await loadActivity(id);
     const v = violations.find(x => x.id === id);
-    renderDetail(v, activity);
+    renderDetail(v, loadActivity(id));
   } catch (e) {
     if (btn) { btn.disabled = false; btn.textContent = "Add Response"; }
     throw e;
@@ -744,9 +787,10 @@ window.submitResponse = async function(id) {
 };
 
 // ---- board actions ----
-async function boardStatusAction(violationId, newStatus) {
+// Resolve/escalate are the board's authoritative lifecycle transitions, written to
+// the `violations` row (only the board can — the row is board-only writable).
+async function boardStatusAction(violationId, newStatus, btn) {
   const note = document.getElementById("d-note")?.value?.trim() ?? "";
-  const btn = modalEl?.querySelector(`button[onclick="submit${newStatus.charAt(0).toUpperCase() + newStatus.slice(1)}('${violationId}')"]`);
   if (btn) { btn.disabled = true; btn.textContent = "Saving…"; }
   try {
     const now = new Date().toISOString();
@@ -769,19 +813,17 @@ async function boardStatusAction(violationId, newStatus) {
   }
 }
 
-window.submitResolve   = async id => boardStatusAction(id, "resolved");
-window.submitEscalate  = async id => boardStatusAction(id, "escalated");
+window.submitResolve   = async (id, btn) => boardStatusAction(id, "resolved", btn);
+window.submitEscalate  = async (id, btn) => boardStatusAction(id, "escalated", btn);
 
-window.submitNote = async function(id) {
+window.submitNote = async function(id, btn) {
   const note = document.getElementById("d-note")?.value?.trim() ?? "";
   if (!note) { document.getElementById("d-note")?.focus(); return; }
-  const btn = modalEl?.querySelector(`button[onclick="submitNote('${id}')"]`);
   if (btn) { btn.disabled = true; btn.textContent = "Saving…"; }
   try {
     await logActivity(id, "note_added", note);
-    const activity = await loadActivity(id);
     const v = violations.find(x => x.id === id);
-    renderDetail(v, activity);
+    renderDetail(v, loadActivity(id));
   } catch (e) {
     if (btn) { btn.disabled = false; btn.textContent = "Save Note"; }
     throw e;
@@ -845,7 +887,7 @@ function handleDeepLink() {
 (async () => {
   await Promise.all([loadContext(), loadSettings()]);
   await processPendingInbox();
-  await loadViolations();
+  await Promise.all([loadViolations(), loadAllActivity()]);
   render();
   handleDeepLink();
 })();

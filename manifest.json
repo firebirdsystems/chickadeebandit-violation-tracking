@@ -23,6 +23,9 @@
       "kind": "owner_only",
       "member_column": "unit_id",
       "adults_bypass": false,
+      "member_can_update": false,
+      "insert_privileged_only": true,
+      "delete_privileged_only": true,
       "bypass_group_setting": { "settings_table": "settings", "settings_key": "board_group_id" }
     },
     "activity": {
@@ -35,6 +38,14 @@
   "admin_config": {
     "settings_table": "settings",
     "keys": ["board_group_id"]
+  },
+  "notification_acls": {
+    "send": {
+      "require_group_setting": {
+        "settings_table": "settings",
+        "settings_key": "board_group_id"
+      }
+    }
   },
   "export_acls": {
     "pending_violations": {
@@ -61,10 +72,5 @@
     }
   },
   "nav": { "label": "Violations" },
-  "icon": "⚠️",
-  "ai_access": {
-    "allowed": true,
-    "mode": "read",
-    "db_exports": ["open_violations", "all_violations"]
-  }
+  "icon": "⚠️"
 }
