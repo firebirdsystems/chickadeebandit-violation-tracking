@@ -5,6 +5,20 @@ import {
   canResolve, canEscalate,
   statusLabel, statusColor, categoryIcon, isOverdue,
 } from "../src/logic.js";
+import { testPrivilegedGateContract } from "./helpers/privileged-gate.mjs";
+
+// ── isBoard ───────────────────────────────────────────────────────────────────
+// Root gate for canIssueViolation / canResolve / canEscalate, which front the
+// violations insert_privileged_only / activity privileged policies. Must satisfy
+// the shared privileged-gate contract (mirrors the hub: no fallback when no
+// board group is configured).
+
+testPrivilegedGateContract("isBoard", isBoard, {
+  member:   { id: "a1", role: "adult" },
+  outsider: { id: "a3", role: "adult" },
+  groups:   [{ id: "g1", memberIds: ["a1", "a2"] }],
+  groupId:  "g1",
+});
 
 const admin   = { id: "a1", name: "Admin",  isAdmin: true };
 const boardM  = { id: "b1", name: "Board",  role: "board" };
