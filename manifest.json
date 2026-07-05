@@ -26,7 +26,7 @@
       "member_can_update": false,
       "insert_privileged_only": true,
       "delete_privileged_only": true,
-      "bypass_group_setting": { "settings_table": "settings", "settings_key": "board_group_id" }
+      "privileged_groups": [{ "settings_table": "settings", "settings_key": "board_group_id" }]
     },
     "activity": {
       "kind": "inherit_visibility",
