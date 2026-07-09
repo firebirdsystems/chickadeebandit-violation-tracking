@@ -1,0 +1,30 @@
+{
+  "scenarios": [
+    {
+      "name": "violations are immutable to plain members: no insert, update, or delete",
+      "members": { "member": "adult" },
+      "steps": [
+        {
+          "action": "db",
+          "as": "member",
+          "sql": "INSERT INTO app_violation_tracking__violations (id, unit_id) VALUES (?, ?)",
+          "params": ["vio1", "{{member}}"],
+          "expect": { "status": 403 }
+        },
+        {
+          "action": "db",
+          "as": "member",
+          "sql": "UPDATE app_violation_tracking__violations SET unit_id = ?",
+          "params": ["{{member}}"],
+          "expect": { "status": 403 }
+        },
+        {
+          "action": "db",
+          "as": "member",
+          "sql": "DELETE FROM app_violation_tracking__violations",
+          "expect": { "status": 403 }
+        }
+      ]
+    }
+  ]
+}
