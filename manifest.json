@@ -6,19 +6,32 @@
   "entrypoint": "index.html",
   "runtime": "static",
   "category": "organization",
-  "tags": ["hoa", "violations", "ccr", "compliance", "board"],
+  "tags": [
+    "hoa",
+    "violations",
+    "ccr",
+    "compliance",
+    "board"
+  ],
   "data_access": {
-    "reads": ["family.members", "family.groups"],
+    "reads": [
+      "family.members",
+      "family.groups"
+    ],
     "writes": []
   },
-  "exports": ["pending_violations"],
+  "exports": [
+    "pending_violations"
+  ],
   "permissions": {
     "default_audience": "everyone",
     "requires_approval": true
   },
   "storage": "db",
   "row_policies": {
-    "settings": { "kind": "app_config" },
+    "settings": {
+      "kind": "app_config"
+    },
     "violations": {
       "kind": "owner_only",
       "member_column": "unit_id",
@@ -26,18 +39,27 @@
       "member_can_update": false,
       "insert_privileged_only": true,
       "delete_privileged_only": true,
-      "privileged_groups": [{ "settings_table": "settings", "settings_key": "board_group_id" }]
+      "privileged_groups": [
+        {
+          "settings_table": "settings",
+          "settings_key": "board_group_id"
+        }
+      ],
+      "audit_writes": true
     },
     "activity": {
       "kind": "inherit_visibility",
       "fk_column": "violation_id",
       "parent_table": "violations",
-      "writer_column": "actor_id"
+      "writer_column": "actor_id",
+      "audit_writes": true
     }
   },
   "admin_config": {
     "settings_table": "settings",
-    "keys": ["board_group_id"]
+    "keys": [
+      "board_group_id"
+    ]
   },
   "notification_acls": {
     "send": {
@@ -71,6 +93,8 @@
       }
     }
   },
-  "nav": { "label": "Violations" },
-  "icon": "⚠️"
+  "nav": {
+    "label": "Violations"
+  },
+  "icon": "\u26a0\ufe0f"
 }
