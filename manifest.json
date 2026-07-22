@@ -1,5 +1,6 @@
 {
   "id": "violation-tracking",
+  "contexts": ["household", "shared_space"],
   "name": "Violation Tracking",
   "version": "1.0.0",
   "description": "Board issues CC&R violation notices to units; homeowners acknowledge, respond, or dispute; board tracks through resolution or escalation.",
