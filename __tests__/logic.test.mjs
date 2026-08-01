@@ -3,7 +3,7 @@ import {
   boardGroup, isBoard,
   canIssueViolation, canAcknowledge, canDispute, canRespond,
   canResolve, canEscalate,
-  statusLabel, statusColor, categoryIcon, isOverdue,
+  statusLabel, statusColor, categoryIcon, isOverdue, searchableFields,
 } from "../src/logic.js";
 import { testPrivilegedGateContract } from "./helpers/privileged-gate.mjs";
 
@@ -193,5 +193,13 @@ describe("isOverdue", () => {
   });
   it("is not overdue when escalated", () => {
     expect(isOverdue({ status: "escalated", cure_deadline: past })).toBe(false);
+  });
+});
+
+describe("searchableFields", () => {
+  it("matches on the description — the body of the notice, not just its filing", () => {
+    const fields = searchableFields({ description: "bins left out three days", category: "grounds" }, "Unit 4");
+    expect(fields).toContain("bins left out three days");
+    expect(fields).toContain("Unit 4");
   });
 });

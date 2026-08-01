@@ -78,3 +78,12 @@ export function isOverdue(violation) {
   if (!violation.cure_deadline) return false;
   return new Date(violation.cure_deadline) < new Date();
 }
+
+/**
+ * Fields the in-app search matches against (see hub-sdk `searchMatch`).
+ * The description is the notice — the category and unit are how it is
+ * filed, but what actually happened is written in the body.
+ */
+export function searchableFields(violation, unitName = "") {
+  return [violation.description, violation.category, unitName];
+}
