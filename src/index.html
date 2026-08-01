@@ -347,7 +347,7 @@ async function loadViolations() {
     return;
   }
   const { rows } = await db(
-    `SELECT * FROM app_violation_tracking__violations ORDER BY created_at DESC`
+    `SELECT * FROM app_violation_tracking__violations ORDER BY created_at DESC LIMIT 1000`
   );
   violations = rows;
 }
@@ -369,7 +369,7 @@ async function loadAllActivity() {
     return;
   }
   const { rows } = await db(
-    `SELECT * FROM app_violation_tracking__activity ORDER BY created_at ASC`
+    `SELECT * FROM app_violation_tracking__activity ORDER BY created_at ASC LIMIT 5000`
   );
   allActivity = rows;
 }

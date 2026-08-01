@@ -94,6 +94,15 @@
       }
     }
   },
+  "member_references": {
+    "violations": [
+      { "column": "unit_id", "on_removed": "keep" },
+      { "column": "issued_by", "on_removed": "keep" }
+    ],
+    "activity": { "column": "actor_id", "on_removed": "keep" }
+  },
+  "kiosk": "never",
+  "resource_limits": { "max_db_bytes": 104857600 },
   "nav": {
     "label": "Violations"
   },
