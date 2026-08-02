@@ -29,6 +29,29 @@
     "requires_approval": true
   },
   "storage": "db",
+  "db_plaintext_columns": [
+    "cure_deadline"
+  ],
+  "agenda": {
+    "kind": "reminder",
+    "label": "Cure deadline",
+    "source": {
+      "kind": "sql",
+      "query": "SELECT id AS id, COALESCE(NULLIF(description, ''), 'Violation notice') AS title, cure_deadline AS when_at, unit_id AS member_id, category AS subtitle FROM app_violation_tracking__violations WHERE cure_deadline = :today AND status = 'open' ORDER BY created_at LIMIT 10"
+    }
+  },
+  "glance": {
+    "source": {
+      "kind": "sql",
+      "query": "SELECT COUNT(*) AS n FROM app_violation_tracking__violations WHERE status = 'open' LIMIT 1"
+    },
+    "display": {
+      "template": "badge",
+      "count": "n",
+      "label": "open violations",
+      "severity": "warn"
+    }
+  },
   "row_policies": {
     "settings": {
       "kind": "app_config"
