@@ -1,8 +1,11 @@
 {
   "id": "violation-tracking",
-  "contexts": ["household", "shared_space"],
+  "contexts": [
+    "household",
+    "shared_space"
+  ],
   "name": "Violation Tracking",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Board issues CC&R violation notices to units; homeowners acknowledge, respond, or dispute; board tracks through resolution or escalation.",
   "entrypoint": "index.html",
   "runtime": "static",
@@ -79,6 +82,11 @@
       "audit_writes": true
     }
   },
+  "delete_file_columns": {
+    "violations": [
+      "photo_file_id"
+    ]
+  },
   "admin_config": {
     "settings_table": "settings",
     "keys": [
@@ -119,13 +127,24 @@
   },
   "member_references": {
     "violations": [
-      { "column": "unit_id", "on_removed": "keep" },
-      { "column": "issued_by", "on_removed": "keep" }
+      {
+        "column": "unit_id",
+        "on_removed": "keep"
+      },
+      {
+        "column": "issued_by",
+        "on_removed": "keep"
+      }
     ],
-    "activity": { "column": "actor_id", "on_removed": "keep" }
+    "activity": {
+      "column": "actor_id",
+      "on_removed": "keep"
+    }
   },
   "kiosk": "never",
-  "resource_limits": { "max_db_bytes": 104857600 },
+  "resource_limits": {
+    "max_db_bytes": 104857600
+  },
   "nav": {
     "label": "Violations"
   },
