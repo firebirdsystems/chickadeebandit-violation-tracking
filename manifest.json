@@ -32,6 +32,11 @@
     "requires_approval": true
   },
   "storage": "db",
+  "preload": {
+    "settings": {"sql": "SELECT key, value FROM app_violation_tracking__settings WHERE key = 'board_group_id'"},
+    "violations": {"sql": "SELECT * FROM app_violation_tracking__violations ORDER BY created_at DESC LIMIT 1000"},
+    "activity": {"sql": "SELECT * FROM app_violation_tracking__activity ORDER BY created_at ASC LIMIT 5000"}
+  },
   "db_plaintext_columns": [
     "cure_deadline"
   ],
