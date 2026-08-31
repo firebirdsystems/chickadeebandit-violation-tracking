@@ -530,7 +530,7 @@ function render() {
         const color   = statusColor(eff);
         const unitName = memberName(v.unit_id);
         return `
-          <div class="violation-card ${overdue ? "overdue" : ""}" onclick="openDetail(${jsArg(v.id)})">
+          <div class="violation-card ${overdue ? "overdue" : ""}" data-testid="violation-card" data-violation-id="${esc(v.id)}" onclick="openDetail(${jsArg(v.id)})">
             <div class="vc-top">
               <div class="vc-icon">${icon}</div>
               <div class="vc-body">
@@ -551,7 +551,7 @@ function render() {
     : "";
 
   const issueBtn = canIssueViolation()
-    ? `<button class="btn btn-icon" onclick="openIssueModal()" title="Issue Notice">＋</button>`
+    ? `<button class="btn btn-icon" data-testid="issue-notice" onclick="openIssueModal()" title="Issue Notice">＋</button>`
     : "";
 
   const subtitle = boardView ? `${violations.length} total violation${violations.length !== 1 ? "s" : ""}` : "Your notices";
@@ -717,7 +717,7 @@ function renderDetail(v, activity) {
     </div>` : "";
 
   const boardActions = boardView && (canResolve(ev) || canEscalate(ev)) ? `
-    <div class="section-title">Board Actions</div>
+    <div class="section-title" data-testid="board-actions">Board Actions</div>
     <div class="form-group">
       <textarea id="d-note" placeholder="Internal note (optional)…"></textarea>
     </div>
@@ -728,7 +728,7 @@ function renderDetail(v, activity) {
     </div>` : "";
 
   openModal(`
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+    <div data-testid="violation-detail" data-violation-id="${esc(v.id)}" style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
       <span style="font-size:1.8rem">${categoryIcon(v.category)}</span>
       <div>
         <div class="modal-title" style="margin-bottom:4px">${esc(v.category.charAt(0).toUpperCase() + v.category.slice(1))} Violation</div>

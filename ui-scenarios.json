@@ -1,0 +1,140 @@
+{
+  "scenarios": [
+    {
+      "name": "the full violation log and the board actions follow the configured board group",
+      "members": {
+        "viewer": "adult",
+        "other": "adult"
+      },
+      "steps": [
+        {
+          "action": "seedGroup",
+          "group": "social",
+          "name": "Social Committee",
+          "members": [
+            "other"
+          ]
+        },
+        {
+          "action": "seedGroup",
+          "group": "board",
+          "name": "Board of Directors",
+          "members": [
+            "viewer"
+          ]
+        },
+        {
+          "action": "seedRaw",
+          "sql": "INSERT INTO app_violation_tracking__settings (key, value) VALUES ('board_group_id', ?)",
+          "params": [
+            "{{group:social}}"
+          ]
+        },
+        {
+          "action": "seedRaw",
+          "sql": "INSERT INTO app_violation_tracking__violations (id, unit_id, issued_by, category, description, cure_deadline, status, created_at, updated_at) VALUES (?, ?, ?, 'parking', ?, date('now','+14 days'), 'open', datetime('now'), datetime('now'))",
+          "params": [
+            "ui-mine",
+            "{{viewer}}",
+            "{{other}}",
+            "Trailer parked in a visitor space overnight."
+          ]
+        },
+        {
+          "action": "seedRaw",
+          "sql": "INSERT INTO app_violation_tracking__violations (id, unit_id, issued_by, category, description, cure_deadline, status, created_at, updated_at) VALUES (?, ?, ?, 'parking', ?, date('now','+14 days'), 'open', datetime('now'), datetime('now'))",
+          "params": [
+            "ui-theirs",
+            "{{other}}",
+            "{{other}}",
+            "Bins left at the kerb past collection day."
+          ]
+        },
+        {
+          "action": "open",
+          "as": "viewer"
+        },
+        {
+          "action": "expectVisible",
+          "as": "viewer",
+          "selector": "[data-testid=\"violation-card\"][data-violation-id=\"ui-mine\"]"
+        },
+        {
+          "action": "expectCount",
+          "as": "viewer",
+          "selector": "[data-testid=\"issue-notice\"]",
+          "count": 0
+        },
+        {
+          "action": "expectCount",
+          "as": "viewer",
+          "selector": "[data-testid=\"violation-card\"]",
+          "count": 1
+        },
+        {
+          "action": "expectNoText",
+          "as": "viewer",
+          "text": "Bins left at the kerb past collection day."
+        },
+        {
+          "action": "click",
+          "as": "viewer",
+          "selector": "[data-testid=\"violation-card\"][data-violation-id=\"ui-mine\"]"
+        },
+        {
+          "action": "expectVisible",
+          "as": "viewer",
+          "selector": "[data-testid=\"violation-detail\"][data-violation-id=\"ui-mine\"]"
+        },
+        {
+          "action": "expectCount",
+          "as": "viewer",
+          "selector": "[data-testid=\"board-actions\"]",
+          "count": 0
+        },
+        {
+          "action": "seedRaw",
+          "sql": "UPDATE app_violation_tracking__settings SET value = ? WHERE key = 'board_group_id'",
+          "params": [
+            "{{group:board}}"
+          ]
+        },
+        {
+          "action": "reload",
+          "as": "viewer"
+        },
+        {
+          "action": "expectVisible",
+          "as": "viewer",
+          "selector": "[data-testid=\"violation-card\"][data-violation-id=\"ui-mine\"]"
+        },
+        {
+          "action": "expectVisible",
+          "as": "viewer",
+          "selector": "[data-testid=\"issue-notice\"]"
+        },
+        {
+          "action": "expectCount",
+          "as": "viewer",
+          "selector": "[data-testid=\"violation-card\"]",
+          "count": 2
+        },
+        {
+          "action": "click",
+          "as": "viewer",
+          "selector": "[data-testid=\"violation-card\"][data-violation-id=\"ui-mine\"]"
+        },
+        {
+          "action": "expectVisible",
+          "as": "viewer",
+          "selector": "[data-testid=\"violation-detail\"][data-violation-id=\"ui-mine\"]"
+        },
+        {
+          "action": "expectVisible",
+          "as": "viewer",
+          "selector": "[data-testid=\"board-actions\"]"
+        }
+      ]
+    }
+  ]
+}
