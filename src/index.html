@@ -31,7 +31,7 @@
     header {
       display: flex; align-items: center; justify-content: space-between;
       margin-bottom: 16px; padding: 14px 18px;
-      background: var(--accent); border-radius: var(--radius); color: white;
+      background: var(--accent); border-radius: var(--radius); color: var(--accent-fg);
     }
     header h1 { font-size: 1.2rem; font-weight: 700; }
     header .sub { font-size: 0.8rem; opacity: .75; margin-top: 1px; }
@@ -43,7 +43,7 @@
       font-size: 0.875rem; font-weight: 600; cursor: pointer; border: none; transition: opacity .15s;
     }
     .btn:disabled { opacity: .5; cursor: default; }
-    .btn-primary  { background: var(--accent); color: white; }
+    .btn-primary  { background: var(--accent); color: var(--accent-fg); }
     .btn-primary:hover:not(:disabled) { opacity: .88; }
     .btn-ghost    { background: transparent; color: var(--muted); border: 1.5px solid var(--border); }
     .btn-ghost:hover { border-color: var(--text); color: var(--text); }
@@ -65,7 +65,7 @@
       border: 1.5px solid var(--border); background: var(--card);
       font-size: 0.85rem; font-weight: 600; cursor: pointer; color: var(--muted); transition: all .15s;
     }
-    .filter-tab.active { border-color: var(--accent); background: #f3f4f6; color: var(--accent); }
+    .filter-tab.active { border-color: var(--accent); background: var(--bg); color: var(--accent); }
 
     .unit-filter {
       margin-bottom: 14px;
