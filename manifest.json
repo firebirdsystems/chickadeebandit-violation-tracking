@@ -27,6 +27,63 @@
   "exports": [
     "pending_violations"
   ],
+  "export_schemas": {
+    "pending_violations": {
+      "description": "Inbox the Vehicle & Parking Registry cross-posts violations to; drained by a Board member on load.",
+      "type": "object",
+      "required": [
+        "items"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "unit_id",
+              "description",
+              "cure_deadline"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "unit_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "issued_by": {
+                "type": "string"
+              },
+              "category": {
+                "type": "string",
+                "enum": [
+                  "parking",
+                  "noise",
+                  "landscaping",
+                  "pets",
+                  "trash",
+                  "architectural",
+                  "other"
+                ]
+              },
+              "description": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2000
+              },
+              "cure_deadline": {
+                "type": "string",
+                "minLength": 10
+              }
+            }
+          }
+        }
+      }
+    }
+  },
   "permissions": {
     "default_audience": "everyone",
     "requires_approval": true

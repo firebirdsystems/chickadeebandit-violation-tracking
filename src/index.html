@@ -336,8 +336,17 @@ async function processPendingInbox() {
       );
     }
 
-    const deleteRes = await fetch(`${STORE}?key=pending_violations`, { method: "DELETE" });
-    if (!deleteRes.ok) throw new Error(`Unable to clear pending violations (${deleteRes.status})`);
+    // Remove exactly the entries drained above, never the whole key: a
+    // violation the Registry cross-posts between our read and this write
+    // survives for the next load instead of being wiped by a DELETE.
+    const drainRes = await fetch(STORE, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        key: "pending_violations",
+        ops: pending.map(item => ({ op: "array_remove", path: "items", value: item })),
+      }),
+    });
+    if (!drainRes.ok) throw new Error(`Unable to clear pending violations (${drainRes.status})`);
   } catch { /* non-fatal */ }
 }
 
