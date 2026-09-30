@@ -25,6 +25,258 @@
           "expect": { "status": 403 }
         }
       ]
+    },
+    {
+      "name": "a child sees only the violation notices cited to their own unit and cannot issue one",
+      "members": { "kid": "child", "parent": "adult" },
+      "steps": [
+        {
+          "action": "seedRaw",
+          "sql": "INSERT INTO app_violation_tracking__violations (id, unit_id, issued_by, description, cure_deadline, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+          "params": [
+            "v-kid",
+            "{{kid}}",
+            "{{parent}}",
+            "Notice v-kid",
+            "2026-02-01",
+            "open",
+            "2026-01-01T00:00:00Z",
+            "2026-01-01T00:00:00Z"
+          ]
+        },
+        {
+          "action": "seedRaw",
+          "sql": "INSERT INTO app_violation_tracking__violations (id, unit_id, issued_by, description, cure_deadline, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+          "params": [
+            "v-parent",
+            "{{parent}}",
+            "{{parent}}",
+            "Notice v-parent",
+            "2026-02-01",
+            "open",
+            "2026-01-01T00:00:00Z",
+            "2026-01-01T00:00:00Z"
+          ]
+        },
+        {
+          "action": "db",
+          "as": "kid",
+          "sql": "SELECT id FROM app_violation_tracking__violations ORDER BY id",
+          "expect": { "status": 200, "rowCount": 1, "rowsContain": [{ "id": "v-kid" }] }
+        },
+        {
+          "action": "db",
+          "as": "kid",
+          "sql": "INSERT INTO app_violation_tracking__violations (id, unit_id, issued_by, cure_deadline, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
+          "params": ["v-new", "{{kid}}", "{{kid}}", "2026-02-01", "2026-01-01T00:00:00Z", "2026-01-01T00:00:00Z"],
+          "expect": { "status": 403 }
+        },
+        {
+          "action": "db",
+          "as": "kid",
+          "sql": "UPDATE app_violation_tracking__violations SET status = ? WHERE id = ?",
+          "params": ["resolved", "v-kid"],
+          "expect": { "status": 403 }
+        },
+        {
+          "action": "db",
+          "as": "kid",
+          "sql": "DELETE FROM app_violation_tracking__violations WHERE id = ?",
+          "params": ["v-kid"],
+          "expect": { "status": 403 }
+        },
+        {
+          "action": "db",
+          "as": "kid",
+          "sql": "SELECT id, status FROM app_violation_tracking__violations",
+          "expect": { "status": 200, "rowCount": 1, "rowsContain": [{ "id": "v-kid", "status": "open" }] }
+        }
+      ]
+    },
+    {
+      "name": "a child can respond on their own notice, always stamped as themselves, but not on another unit's notice",
+      "members": { "kid": "child", "parent": "adult" },
+      "steps": [
+        {
+          "action": "seedRaw",
+          "sql": "INSERT INTO app_violation_tracking__violations (id, unit_id, issued_by, description, cure_deadline, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+          "params": [
+            "v-kid",
+            "{{kid}}",
+            "{{parent}}",
+            "Notice v-kid",
+            "2026-02-01",
+            "open",
+            "2026-01-01T00:00:00Z",
+            "2026-01-01T00:00:00Z"
+          ]
+        },
+        {
+          "action": "seedRaw",
+          "sql": "INSERT INTO app_violation_tracking__violations (id, unit_id, issued_by, description, cure_deadline, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+          "params": [
+            "v-parent",
+            "{{parent}}",
+            "{{parent}}",
+            "Notice v-parent",
+            "2026-02-01",
+            "open",
+            "2026-01-01T00:00:00Z",
+            "2026-01-01T00:00:00Z"
+          ]
+        },
+        {
+          "action": "db",
+          "as": "kid",
+          "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+          "params": ["a-1", "v-kid", "{{kid}}", "respond", "Fixed it", "2026-01-02T00:00:00Z"],
+          "expect": { "status": 200 }
+        },
+        {
+          "action": "db",
+          "as": "kid",
+          "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+          "params": ["a-2", "v-kid", "{{parent}}", "respond", "Forged", "2026-01-02T00:00:00Z"],
+          "expect": { "status": 200 }
+        },
+        {
+          "action": "db",
+          "as": "kid",
+          "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+          "params": ["a-3", "v-parent", "{{kid}}", "dispute", "Not mine", "2026-01-02T00:00:00Z"],
+          "expect": { "status": 403 }
+        },
+        {
+          "action": "db",
+          "as": "kid",
+          "sql": "SELECT id, actor_id FROM app_violation_tracking__activity ORDER BY id",
+          "expect": {
+            "status": 200,
+            "rowCount": 2,
+            "rowsContain": [{ "id": "a-1", "actor_id": "scn-kid" }, { "id": "a-2", "actor_id": "scn-kid" }]
+          }
+        }
+      ]
+    },
+    {
+      "name": "a board-group member issues, updates and withdraws a violation notice for a unit and can log activity on it; a plain adult outside the board cannot",
+      "members": { "inspector": "adult", "owner": "adult", "neighbor": "adult" },
+      "steps": [
+        { "action": "seedGroup", "group": "board", "name": "Board", "members": ["inspector"] },
+        {
+          "action": "seedRaw",
+          "sql": "INSERT INTO app_violation_tracking__settings (key, value) VALUES ('board_group_id', ?)",
+          "params": ["{{group:board}}"]
+        },
+        {
+          "action": "db",
+          "as": "inspector",
+          "sql": "INSERT INTO app_violation_tracking__violations (id, unit_id, issued_by, description, cure_deadline, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+          "params": [
+            "v-1",
+            "{{owner}}",
+            "{{inspector}}",
+            "Trash cans visible",
+            "2099-02-01",
+            "open",
+            "2099-01-01T00:00:00Z",
+            "2099-01-01T00:00:00Z"
+          ],
+          "expect": { "status": 200 }
+        },
+        {
+          "action": "db",
+          "as": "inspector",
+          "sql": "INSERT INTO app_violation_tracking__violations (id, unit_id, issued_by, description, cure_deadline, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+          "params": [
+            "v-2",
+            "{{neighbor}}",
+            "{{inspector}}",
+            "Lawn overgrown",
+            "2099-02-01",
+            "open",
+            "2099-01-01T00:00:00Z",
+            "2099-01-01T00:00:00Z"
+          ],
+          "expect": { "status": 200 }
+        },
+        {
+          "action": "db",
+          "as": "neighbor",
+          "sql": "INSERT INTO app_violation_tracking__violations (id, unit_id, issued_by, description, cure_deadline, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+          "params": [
+            "v-3",
+            "{{owner}}",
+            "{{neighbor}}",
+            "Spite notice",
+            "2099-02-01",
+            "open",
+            "2099-01-01T00:00:00Z",
+            "2099-01-01T00:00:00Z"
+          ],
+          "expect": { "status": 403 }
+        },
+        {
+          "action": "db",
+          "as": "inspector",
+          "sql": "UPDATE app_violation_tracking__violations SET status = 'cured' WHERE id = 'v-1'",
+          "expect": { "status": 200 }
+        },
+        {
+          "action": "db",
+          "as": "inspector",
+          "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+          "params": ["act-1", "v-1", "{{inspector}}", "cured", "Verified on site", "2099-01-03T00:00:00Z"],
+          "expect": { "status": 200 }
+        },
+        {
+          "action": "db",
+          "as": "neighbor",
+          "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+          "params": ["act-2", "v-1", "{{neighbor}}", "comment", "Not cured", "2099-01-03T00:00:00Z"],
+          "expect": { "status": 403 }
+        },
+        {
+          "action": "db",
+          "as": "owner",
+          "sql": "UPDATE app_violation_tracking__violations SET status = 'dismissed' WHERE id = 'v-1'",
+          "expect": { "status": 403 }
+        },
+        {
+          "action": "db",
+          "as": "owner",
+          "sql": "SELECT id, unit_id, status FROM app_violation_tracking__violations",
+          "expect": {
+            "status": 200,
+            "rowCount": 1,
+            "rowsContain": [{ "id": "v-1", "unit_id": "scn-owner", "status": "cured" }]
+          }
+        },
+        {
+          "action": "db",
+          "as": "owner",
+          "sql": "SELECT id, actor_id FROM app_violation_tracking__activity",
+          "expect": { "status": 200, "rowCount": 1, "rowsContain": [{ "id": "act-1", "actor_id": "scn-inspector" }] }
+        },
+        {
+          "action": "db",
+          "as": "neighbor",
+          "sql": "DELETE FROM app_violation_tracking__violations WHERE id = 'v-2'",
+          "expect": { "status": 403 }
+        },
+        {
+          "action": "db",
+          "as": "inspector",
+          "sql": "DELETE FROM app_violation_tracking__violations WHERE id = 'v-2'",
+          "expect": { "status": 200 }
+        },
+        {
+          "action": "db",
+          "as": "inspector",
+          "sql": "SELECT id FROM app_violation_tracking__violations",
+          "expect": { "status": 200, "rowCount": 1, "rowsContain": [{ "id": "v-1" }] }
+        }
+      ]
     }
   ]
 }
