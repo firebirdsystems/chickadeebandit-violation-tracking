@@ -61,16 +61,16 @@ export function statusColor(status) {
   }[status] ?? "#6b7280";
 }
 
-export function categoryIcon(category) {
+export function categoryGlyph(category) {
   return {
-    parking:       "🚗",
-    noise:         "📢",
-    landscaping:   "🌿",
-    pets:          "🐾",
-    trash:         "🗑️",
-    architectural: "🏗️",
-    other:         "📋",
-  }[category] ?? "📋";
+    parking:       "car",
+    noise:         "megaphone",
+    landscaping:   "sprout",
+    pets:          "paw",
+    trash:         "trash",
+    architectural: "blueprint",
+    other:         "note",
+  }[category] ?? "note";
 }
 
 export function isOverdue(violation) {

@@ -3,7 +3,7 @@ import {
   boardGroup, isBoard,
   canIssueViolation, canAcknowledge, canDispute, canRespond,
   canResolve, canEscalate,
-  statusLabel, statusColor, categoryIcon, isOverdue, searchableFields,
+  statusLabel, statusColor, categoryGlyph, isOverdue, searchableFields,
 } from "../src/logic.js";
 import { testPrivilegedGateContract } from "./helpers/privileged-gate.mjs";
 
@@ -164,16 +164,16 @@ describe("statusColor", () => {
   });
 });
 
-// --- categoryIcon ---
-describe("categoryIcon", () => {
-  it("returns an emoji for each known category", () => {
+// --- categoryGlyph ---
+describe("categoryGlyph", () => {
+  it("returns a glyph name for each known category", () => {
     for (const c of ["parking", "noise", "landscaping", "pets", "trash", "architectural", "other"]) {
-      expect(typeof categoryIcon(c)).toBe("string");
-      expect(categoryIcon(c).length).toBeGreaterThan(0);
+      expect(typeof categoryGlyph(c)).toBe("string");
+      expect(categoryGlyph(c).length).toBeGreaterThan(0);
     }
   });
-  it("falls back to clipboard for unknown category", () => {
-    expect(categoryIcon("unknown")).toBe("📋");
+  it("falls back to note for unknown category", () => {
+    expect(categoryGlyph("unknown")).toBe("note");
   });
 });
 

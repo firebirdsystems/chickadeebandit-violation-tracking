@@ -107,7 +107,7 @@
       text-align: center; padding: 48px 24px; color: var(--muted);
       font-size: 0.95rem;
     }
-    .empty-icon { font-size: 2.5rem; margin-bottom: 12px; }
+    .empty-icon { margin-bottom: 12px; }
 
     /* Modal */
     .modal-backdrop {
@@ -183,7 +183,7 @@
 
 <script type="module">
 import {
-  memberColor, initial, esc, hubConfirm, formatRelativeDate, searchMatch,
+  memberColor, initial, esc, hubConfirm, formatRelativeDate, searchMatch, glyph, chickadee,
 } from "/hub-sdk.js";
 import { createFilesHelper } from "/hub-sdk.js";
 import {
@@ -191,7 +191,7 @@ import {
   canIssueViolation as _canIssueViolation,
   canAcknowledge, canDispute, canRespond,
   canResolve as _canResolve, canEscalate as _canEscalate,
-  statusLabel, statusColor, categoryIcon, isOverdue, searchableFields,
+  statusLabel, statusColor, categoryGlyph, isOverdue, searchableFields,
 } from "./logic.js";
 
 const CONTEXT         = window.__CONTEXT_URL    ?? "";
@@ -530,12 +530,12 @@ function render() {
 
   const cardsHtml = list.length === 0
     ? (searchQ
-      ? `<div class="empty"><div class="empty-icon">🔍</div>Nothing matches "${esc(searchQ)}".</div>`
-      : `<div class="empty"><div class="empty-icon">✅</div>No violations found.</div>`)
+      ? `<div class="empty"><div class="empty-icon">${chickadee("searching")}</div>Nothing matches "${esc(searchQ)}".</div>`
+      : `<div class="empty"><div class="empty-icon">${chickadee("sleeping")}</div>No violations found.</div>`)
     : list.map(v => {
         const eff     = effectiveStatus(v);
         const overdue = isOverdue({ ...v, status: eff });
-        const icon    = categoryIcon(v.category);
+        const icon    = glyph(categoryGlyph(v.category));
         const color   = statusColor(eff);
         const unitName = memberName(v.unit_id);
         return `
@@ -550,17 +550,17 @@ function render() {
             <div class="vc-footer">
               <span class="badge" style="background:${color}">${statusLabel(eff)}</span>
               <span class="badge badge-outline">Deadline: ${fmtDate(v.cure_deadline)}</span>
-              ${overdue ? `<span class="overdue-label">⚠ Overdue</span>` : ""}
+              ${overdue ? `<span class="overdue-label">${glyph("warning")} Overdue</span>` : ""}
             </div>
           </div>`;
       }).join("");
 
   const settingsBtn = ME?.isAdmin
-    ? `<button class="btn-icon" onclick="openSettingsModal()" title="Settings">⚙️</button>`
+    ? `<button class="btn-icon" onclick="openSettingsModal()" title="Settings" aria-label="Settings">${glyph("gear", { accent: "currentColor" })}</button>`
     : "";
 
   const issueBtn = canIssueViolation()
-    ? `<button class="btn btn-icon" data-testid="issue-notice" onclick="openIssueModal()" title="Issue Notice">＋</button>`
+    ? `<button class="btn btn-icon" data-testid="issue-notice" onclick="openIssueModal()" title="Issue Notice" aria-label="Issue Notice">${glyph("plus", { accent: "currentColor" })}</button>`
     : "";
 
   const subtitle = boardView ? `${violations.length} total violation${violations.length !== 1 ? "s" : ""}` : "Your notices";
@@ -568,7 +568,7 @@ function render() {
   document.getElementById("app").innerHTML = `
     <header>
       <div>
-        <div class="h1" style="font-size:1.2rem;font-weight:700">⚠️ Violation Tracking</div>
+        <div class="h1" style="font-size:1.2rem;font-weight:700">${glyph("warning")} Violation Tracking</div>
         <div class="sub">${esc(subtitle)}</div>
       </div>
       <div class="header-actions">${issueBtn}${settingsBtn}</div>
@@ -606,13 +606,13 @@ window.openIssueModal = function() {
     <div class="form-group">
       <label>Category</label>
       <select id="f-category">
-        <option value="parking">🚗 Parking</option>
-        <option value="noise">📢 Noise</option>
-        <option value="landscaping">🌿 Landscaping</option>
-        <option value="pets">🐾 Pets</option>
-        <option value="trash">🗑️ Trash / Debris</option>
-        <option value="architectural">🏗️ Architectural</option>
-        <option value="other">📋 Other</option>
+        <option value="parking">Parking</option>
+        <option value="noise">Noise</option>
+        <option value="landscaping">Landscaping</option>
+        <option value="pets">Pets</option>
+        <option value="trash">Trash / Debris</option>
+        <option value="architectural">Architectural</option>
+        <option value="other">Other</option>
       </select>
     </div>
     <div class="form-group">
@@ -738,11 +738,11 @@ function renderDetail(v, activity) {
 
   openModal(`
     <div data-testid="violation-detail" data-violation-id="${esc(v.id)}" style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
-      <span style="font-size:1.8rem">${categoryIcon(v.category)}</span>
+      <span style="font-size:1.8rem">${glyph(categoryGlyph(v.category))}</span>
       <div>
         <div class="modal-title" style="margin-bottom:4px">${esc(v.category.charAt(0).toUpperCase() + v.category.slice(1))} Violation</div>
         <span class="badge" style="background:${color}">${statusLabel(ev.status)}</span>
-        ${overdue ? `<span class="overdue-label" style="margin-left:8px">⚠ Overdue</span>` : ""}
+        ${overdue ? `<span class="overdue-label" style="margin-left:8px">${glyph("warning")} Overdue</span>` : ""}
       </div>
     </div>
 
@@ -870,7 +870,7 @@ window.openSettingsModal = function() {
   ).join("");
 
   openModal(`
-    <div class="modal-title">⚙️ Settings</div>
+    <div class="modal-title">${glyph("gear")} Settings</div>
     <div class="form-group">
       <label>Board / Issuing Group</label>
       <select id="s-group">
