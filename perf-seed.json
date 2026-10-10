@@ -1,0 +1,1573 @@
+{
+  "groups": [
+    {
+      "key": "board",
+      "name": "Board of Directors",
+      "members": [
+        "{{me}}",
+        "{{partner}}"
+      ]
+    }
+  ],
+  "seed": [
+    {
+      "sql": "INSERT INTO app_violation_tracking__settings (key, value) VALUES (?, ?)",
+      "params": [
+        "board_group_id",
+        "{{group:board}}"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__violations (id, unit_id, issued_by, category, description, cure_deadline, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-2 days','+0 minutes'), strftime('%Y-%m-%dT%H:%M:%fZ','now','+0 days','-3 minutes'))",
+      "params": [
+        "perf-vio-01",
+        "{{adult2}}",
+        "{{partner}}",
+        "parking",
+        "Vehicle parked in the fire lane for three days.",
+        "{{date:12}}",
+        "open"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-2 days','+1 minutes'))",
+      "params": [
+        "perf-act-001",
+        "perf-vio-01",
+        "{{partner}}",
+        "issued",
+        "Category: parking"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__violations (id, unit_id, issued_by, category, description, cure_deadline, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-6 days','+1 minutes'), strftime('%Y-%m-%dT%H:%M:%fZ','now','-3 days','+1 minutes'))",
+      "params": [
+        "perf-vio-02",
+        "{{me}}",
+        "{{partner}}",
+        "landscaping",
+        "Lawn not mowed per CC&R 4.2. Grass exceeds six inches.",
+        "{{date:8}}",
+        "open"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-6 days','+2 minutes'))",
+      "params": [
+        "perf-act-002",
+        "perf-vio-02",
+        "{{partner}}",
+        "issued",
+        "Category: landscaping"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__violations (id, unit_id, issued_by, category, description, cure_deadline, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-10 days','+2 minutes'), strftime('%Y-%m-%dT%H:%M:%fZ','now','-7 days','+2 minutes'))",
+      "params": [
+        "perf-vio-03",
+        "{{partner}}",
+        "{{me}}",
+        "noise",
+        "Excessive noise after quiet hours on Saturday night.",
+        "{{date:4}}",
+        "acknowledged"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-10 days','+3 minutes'))",
+      "params": [
+        "perf-act-003",
+        "perf-vio-03",
+        "{{me}}",
+        "issued",
+        "Category: noise"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-9 days','+2 minutes'))",
+      "params": [
+        "perf-act-004",
+        "perf-vio-03",
+        "{{partner}}",
+        "acknowledged",
+        "Will take care of it this week."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__violations (id, unit_id, issued_by, category, description, cure_deadline, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-14 days','+3 minutes'), strftime('%Y-%m-%dT%H:%M:%fZ','now','-11 days','+3 minutes'))",
+      "params": [
+        "perf-vio-04",
+        "{{adult2}}",
+        "{{me}}",
+        "trash",
+        "Bins left at the kerb four days after collection.",
+        "{{date:0}}",
+        "open"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-14 days','+4 minutes'))",
+      "params": [
+        "perf-act-005",
+        "perf-vio-04",
+        "{{me}}",
+        "issued",
+        "Category: trash"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__violations (id, unit_id, issued_by, category, description, cure_deadline, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-18 days','+4 minutes'), strftime('%Y-%m-%dT%H:%M:%fZ','now','-15 days','+4 minutes'))",
+      "params": [
+        "perf-vio-05",
+        "{{adult2}}",
+        "{{partner}}",
+        "pets",
+        "Dog off leash in the common area, second report this month.",
+        "{{date:-4}}",
+        "disputed"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-18 days','+5 minutes'))",
+      "params": [
+        "perf-act-006",
+        "perf-vio-05",
+        "{{partner}}",
+        "issued",
+        "Category: pets"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-17 days','+4 minutes'))",
+      "params": [
+        "perf-act-007",
+        "perf-vio-05",
+        "{{adult2}}",
+        "disputed",
+        "This was a guest's vehicle and it has already been moved."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-16 days','+4 minutes'))",
+      "params": [
+        "perf-act-008",
+        "perf-vio-05",
+        "{{partner}}",
+        "note_added",
+        "Board will review at the next meeting."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__violations (id, unit_id, issued_by, category, description, cure_deadline, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-22 days','+5 minutes'), strftime('%Y-%m-%dT%H:%M:%fZ','now','-19 days','+5 minutes'))",
+      "params": [
+        "perf-vio-06",
+        "{{me}}",
+        "{{partner}}",
+        "architectural",
+        "Fence painted a colour that was not approved by the review committee.",
+        "{{date:-8}}",
+        "acknowledged"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-22 days','+6 minutes'))",
+      "params": [
+        "perf-act-009",
+        "perf-vio-06",
+        "{{partner}}",
+        "issued",
+        "Category: architectural"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-21 days','+5 minutes'))",
+      "params": [
+        "perf-act-010",
+        "perf-vio-06",
+        "{{me}}",
+        "acknowledged",
+        "Will take care of it this week."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__violations (id, unit_id, issued_by, category, description, cure_deadline, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-26 days','+6 minutes'), strftime('%Y-%m-%dT%H:%M:%fZ','now','-23 days','+6 minutes'))",
+      "params": [
+        "perf-vio-07",
+        "{{partner}}",
+        "{{me}}",
+        "other",
+        "Holiday lights still up past the 30-day window.",
+        "{{date:-12}}",
+        "open"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-26 days','+7 minutes'))",
+      "params": [
+        "perf-act-011",
+        "perf-vio-07",
+        "{{me}}",
+        "issued",
+        "Category: other"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__violations (id, unit_id, issued_by, category, description, cure_deadline, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-30 days','+7 minutes'), strftime('%Y-%m-%dT%H:%M:%fZ','now','-27 days','+7 minutes'))",
+      "params": [
+        "perf-vio-08",
+        "{{adult2}}",
+        "{{me}}",
+        "parking",
+        "Trailer parked in a visitor space overnight.",
+        "{{date:-20}}",
+        "resolved"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-30 days','+8 minutes'))",
+      "params": [
+        "perf-act-012",
+        "perf-vio-08",
+        "{{me}}",
+        "issued",
+        "Category: parking"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-29 days','+7 minutes'))",
+      "params": [
+        "perf-act-013",
+        "perf-vio-08",
+        "{{adult2}}",
+        "acknowledged",
+        "Understood, fixing it."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-28 days','+7 minutes'))",
+      "params": [
+        "perf-act-014",
+        "perf-vio-08",
+        "{{adult2}}",
+        "responded",
+        "Done, photo attached at the gate."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-27 days','+7 minutes'))",
+      "params": [
+        "perf-act-015",
+        "perf-vio-08",
+        "{{me}}",
+        "resolved",
+        "Confirmed on a walk-through."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__violations (id, unit_id, issued_by, category, description, cure_deadline, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-34 days','+8 minutes'), strftime('%Y-%m-%dT%H:%M:%fZ','now','-31 days','+8 minutes'))",
+      "params": [
+        "perf-vio-09",
+        "{{me}}",
+        "{{partner}}",
+        "landscaping",
+        "Dead tree in the front yard has not been removed.",
+        "{{date:-24}}",
+        "resolved"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-34 days','+9 minutes'))",
+      "params": [
+        "perf-act-016",
+        "perf-vio-09",
+        "{{partner}}",
+        "issued",
+        "Category: landscaping"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-33 days','+8 minutes'))",
+      "params": [
+        "perf-act-017",
+        "perf-vio-09",
+        "{{me}}",
+        "acknowledged",
+        "Understood, fixing it."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-32 days','+8 minutes'))",
+      "params": [
+        "perf-act-018",
+        "perf-vio-09",
+        "{{me}}",
+        "responded",
+        "Done, photo attached at the gate."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-31 days','+8 minutes'))",
+      "params": [
+        "perf-act-019",
+        "perf-vio-09",
+        "{{partner}}",
+        "resolved",
+        "Confirmed on a walk-through."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__violations (id, unit_id, issued_by, category, description, cure_deadline, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-38 days','+9 minutes'), strftime('%Y-%m-%dT%H:%M:%fZ','now','-35 days','+9 minutes'))",
+      "params": [
+        "perf-vio-10",
+        "{{adult2}}",
+        "{{me}}",
+        "noise",
+        "Power tools running before 7am on a weekday.",
+        "{{date:-28}}",
+        "escalated"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-38 days','+10 minutes'))",
+      "params": [
+        "perf-act-020",
+        "perf-vio-10",
+        "{{me}}",
+        "issued",
+        "Category: noise"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-36 days','+9 minutes'))",
+      "params": [
+        "perf-act-021",
+        "perf-vio-10",
+        "{{me}}",
+        "note_added",
+        "Second notice sent by mail."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-35 days','+9 minutes'))",
+      "params": [
+        "perf-act-022",
+        "perf-vio-10",
+        "{{me}}",
+        "escalated",
+        "No response after two notices. Referred for a hearing."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__violations (id, unit_id, issued_by, category, description, cure_deadline, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-42 days','+10 minutes'), strftime('%Y-%m-%dT%H:%M:%fZ','now','-39 days','+10 minutes'))",
+      "params": [
+        "perf-vio-11",
+        "{{adult2}}",
+        "{{me}}",
+        "trash",
+        "Bulk items left beside the dumpster enclosure.",
+        "{{date:-28}}",
+        "open"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-42 days','+11 minutes'))",
+      "params": [
+        "perf-act-023",
+        "perf-vio-11",
+        "{{me}}",
+        "issued",
+        "Category: trash"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__violations (id, unit_id, issued_by, category, description, cure_deadline, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-46 days','+11 minutes'), strftime('%Y-%m-%dT%H:%M:%fZ','now','-43 days','+11 minutes'))",
+      "params": [
+        "perf-vio-12",
+        "{{partner}}",
+        "{{me}}",
+        "pets",
+        "Pet waste not picked up along the walking path.",
+        "{{date:-32}}",
+        "disputed"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-46 days','+12 minutes'))",
+      "params": [
+        "perf-act-024",
+        "perf-vio-12",
+        "{{me}}",
+        "issued",
+        "Category: pets"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-45 days','+11 minutes'))",
+      "params": [
+        "perf-act-025",
+        "perf-vio-12",
+        "{{partner}}",
+        "disputed",
+        "This was a guest's vehicle and it has already been moved."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-44 days','+11 minutes'))",
+      "params": [
+        "perf-act-026",
+        "perf-vio-12",
+        "{{me}}",
+        "note_added",
+        "Board will review at the next meeting."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__violations (id, unit_id, issued_by, category, description, cure_deadline, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-50 days','+12 minutes'), strftime('%Y-%m-%dT%H:%M:%fZ','now','-47 days','+12 minutes'))",
+      "params": [
+        "perf-vio-13",
+        "{{adult2}}",
+        "{{partner}}",
+        "architectural",
+        "Satellite dish mounted on the front elevation.",
+        "{{date:-40}}",
+        "resolved"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-50 days','+13 minutes'))",
+      "params": [
+        "perf-act-027",
+        "perf-vio-13",
+        "{{partner}}",
+        "issued",
+        "Category: architectural"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-49 days','+12 minutes'))",
+      "params": [
+        "perf-act-028",
+        "perf-vio-13",
+        "{{adult2}}",
+        "acknowledged",
+        "Understood, fixing it."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-48 days','+12 minutes'))",
+      "params": [
+        "perf-act-029",
+        "perf-vio-13",
+        "{{adult2}}",
+        "responded",
+        "Done, photo attached at the gate."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-47 days','+12 minutes'))",
+      "params": [
+        "perf-act-030",
+        "perf-vio-13",
+        "{{partner}}",
+        "resolved",
+        "Confirmed on a walk-through."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__violations (id, unit_id, issued_by, category, description, cure_deadline, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-54 days','+13 minutes'), strftime('%Y-%m-%dT%H:%M:%fZ','now','-51 days','+13 minutes'))",
+      "params": [
+        "perf-vio-14",
+        "{{me}}",
+        "{{partner}}",
+        "parking",
+        "Permit not displayed on a vehicle in an assigned spot.",
+        "{{date:-40}}",
+        "acknowledged"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-54 days','+14 minutes'))",
+      "params": [
+        "perf-act-031",
+        "perf-vio-14",
+        "{{partner}}",
+        "issued",
+        "Category: parking"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-53 days','+13 minutes'))",
+      "params": [
+        "perf-act-032",
+        "perf-vio-14",
+        "{{me}}",
+        "acknowledged",
+        "Will take care of it this week."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__violations (id, unit_id, issued_by, category, description, cure_deadline, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-58 days','+14 minutes'), strftime('%Y-%m-%dT%H:%M:%fZ','now','-55 days','+14 minutes'))",
+      "params": [
+        "perf-vio-15",
+        "{{partner}}",
+        "{{me}}",
+        "other",
+        "Storage pod left on the driveway beyond the two-week limit.",
+        "{{date:-48}}",
+        "resolved"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-58 days','+15 minutes'))",
+      "params": [
+        "perf-act-033",
+        "perf-vio-15",
+        "{{me}}",
+        "issued",
+        "Category: other"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-57 days','+14 minutes'))",
+      "params": [
+        "perf-act-034",
+        "perf-vio-15",
+        "{{partner}}",
+        "acknowledged",
+        "Understood, fixing it."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-56 days','+14 minutes'))",
+      "params": [
+        "perf-act-035",
+        "perf-vio-15",
+        "{{partner}}",
+        "responded",
+        "Done, photo attached at the gate."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-55 days','+14 minutes'))",
+      "params": [
+        "perf-act-036",
+        "perf-vio-15",
+        "{{me}}",
+        "resolved",
+        "Confirmed on a walk-through."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__violations (id, unit_id, issued_by, category, description, cure_deadline, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-62 days','+15 minutes'), strftime('%Y-%m-%dT%H:%M:%fZ','now','-59 days','+15 minutes'))",
+      "params": [
+        "perf-vio-16",
+        "{{adult2}}",
+        "{{me}}",
+        "landscaping",
+        "Hedge overgrowing the shared pavement.",
+        "{{date:-48}}",
+        "open"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-62 days','+16 minutes'))",
+      "params": [
+        "perf-act-037",
+        "perf-vio-16",
+        "{{me}}",
+        "issued",
+        "Category: landscaping"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__violations (id, unit_id, issued_by, category, description, cure_deadline, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-66 days','+16 minutes'), strftime('%Y-%m-%dT%H:%M:%fZ','now','-63 days','+16 minutes'))",
+      "params": [
+        "perf-vio-17",
+        "{{adult2}}",
+        "{{partner}}",
+        "parking",
+        "Commercial vehicle parked overnight in the lot.",
+        "{{date:-56}}",
+        "resolved"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-66 days','+17 minutes'))",
+      "params": [
+        "perf-act-038",
+        "perf-vio-17",
+        "{{partner}}",
+        "issued",
+        "Category: parking"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-65 days','+16 minutes'))",
+      "params": [
+        "perf-act-039",
+        "perf-vio-17",
+        "{{adult2}}",
+        "acknowledged",
+        "Understood, fixing it."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-64 days','+16 minutes'))",
+      "params": [
+        "perf-act-040",
+        "perf-vio-17",
+        "{{adult2}}",
+        "responded",
+        "Done, photo attached at the gate."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-63 days','+16 minutes'))",
+      "params": [
+        "perf-act-041",
+        "perf-vio-17",
+        "{{partner}}",
+        "resolved",
+        "Confirmed on a walk-through."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__violations (id, unit_id, issued_by, category, description, cure_deadline, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-70 days','+17 minutes'), strftime('%Y-%m-%dT%H:%M:%fZ','now','-67 days','+17 minutes'))",
+      "params": [
+        "perf-vio-18",
+        "{{adult2}}",
+        "{{me}}",
+        "noise",
+        "Repeated late-night gatherings on the patio.",
+        "{{date:-60}}",
+        "escalated"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-70 days','+18 minutes'))",
+      "params": [
+        "perf-act-042",
+        "perf-vio-18",
+        "{{me}}",
+        "issued",
+        "Category: noise"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-68 days','+17 minutes'))",
+      "params": [
+        "perf-act-043",
+        "perf-vio-18",
+        "{{me}}",
+        "note_added",
+        "Second notice sent by mail."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-67 days','+17 minutes'))",
+      "params": [
+        "perf-act-044",
+        "perf-vio-18",
+        "{{me}}",
+        "escalated",
+        "No response after two notices. Referred for a hearing."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__violations (id, unit_id, issued_by, category, description, cure_deadline, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-74 days','+18 minutes'), strftime('%Y-%m-%dT%H:%M:%fZ','now','-71 days','+18 minutes'))",
+      "params": [
+        "perf-vio-19",
+        "{{me}}",
+        "{{partner}}",
+        "trash",
+        "Recycling not broken down, blocking the bin area.",
+        "{{date:-64}}",
+        "resolved"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-74 days','+19 minutes'))",
+      "params": [
+        "perf-act-045",
+        "perf-vio-19",
+        "{{partner}}",
+        "issued",
+        "Category: trash"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-73 days','+18 minutes'))",
+      "params": [
+        "perf-act-046",
+        "perf-vio-19",
+        "{{me}}",
+        "acknowledged",
+        "Understood, fixing it."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-72 days','+18 minutes'))",
+      "params": [
+        "perf-act-047",
+        "perf-vio-19",
+        "{{me}}",
+        "responded",
+        "Done, photo attached at the gate."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-71 days','+18 minutes'))",
+      "params": [
+        "perf-act-048",
+        "perf-vio-19",
+        "{{partner}}",
+        "resolved",
+        "Confirmed on a walk-through."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__violations (id, unit_id, issued_by, category, description, cure_deadline, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-78 days','+19 minutes'), strftime('%Y-%m-%dT%H:%M:%fZ','now','-75 days','+19 minutes'))",
+      "params": [
+        "perf-vio-20",
+        "{{partner}}",
+        "{{me}}",
+        "architectural",
+        "Shed installed without a submitted application.",
+        "{{date:-68}}",
+        "resolved"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-78 days','+20 minutes'))",
+      "params": [
+        "perf-act-049",
+        "perf-vio-20",
+        "{{me}}",
+        "issued",
+        "Category: architectural"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-77 days','+19 minutes'))",
+      "params": [
+        "perf-act-050",
+        "perf-vio-20",
+        "{{partner}}",
+        "acknowledged",
+        "Understood, fixing it."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-76 days','+19 minutes'))",
+      "params": [
+        "perf-act-051",
+        "perf-vio-20",
+        "{{partner}}",
+        "responded",
+        "Done, photo attached at the gate."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-75 days','+19 minutes'))",
+      "params": [
+        "perf-act-052",
+        "perf-vio-20",
+        "{{me}}",
+        "resolved",
+        "Confirmed on a walk-through."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__violations (id, unit_id, issued_by, category, description, cure_deadline, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-82 days','+20 minutes'), strftime('%Y-%m-%dT%H:%M:%fZ','now','-79 days','+20 minutes'))",
+      "params": [
+        "perf-vio-21",
+        "{{adult2}}",
+        "{{partner}}",
+        "parking",
+        "Vehicle parked in the fire lane for three days (repeat notice).",
+        "{{date:-72}}",
+        "resolved"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-82 days','+21 minutes'))",
+      "params": [
+        "perf-act-053",
+        "perf-vio-21",
+        "{{partner}}",
+        "issued",
+        "Category: parking"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-81 days','+20 minutes'))",
+      "params": [
+        "perf-act-054",
+        "perf-vio-21",
+        "{{adult2}}",
+        "acknowledged",
+        "Understood, fixing it."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-80 days','+20 minutes'))",
+      "params": [
+        "perf-act-055",
+        "perf-vio-21",
+        "{{adult2}}",
+        "responded",
+        "Done, photo attached at the gate."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-79 days','+20 minutes'))",
+      "params": [
+        "perf-act-056",
+        "perf-vio-21",
+        "{{partner}}",
+        "resolved",
+        "Confirmed on a walk-through."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__violations (id, unit_id, issued_by, category, description, cure_deadline, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-86 days','+21 minutes'), strftime('%Y-%m-%dT%H:%M:%fZ','now','-83 days','+21 minutes'))",
+      "params": [
+        "perf-vio-22",
+        "{{me}}",
+        "{{partner}}",
+        "landscaping",
+        "Lawn not mowed per CC&R 4.2. Grass exceeds six inches (repeat notice).",
+        "{{date:-76}}",
+        "resolved"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-86 days','+22 minutes'))",
+      "params": [
+        "perf-act-057",
+        "perf-vio-22",
+        "{{partner}}",
+        "issued",
+        "Category: landscaping"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-85 days','+21 minutes'))",
+      "params": [
+        "perf-act-058",
+        "perf-vio-22",
+        "{{me}}",
+        "acknowledged",
+        "Understood, fixing it."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-84 days','+21 minutes'))",
+      "params": [
+        "perf-act-059",
+        "perf-vio-22",
+        "{{me}}",
+        "responded",
+        "Done, photo attached at the gate."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-83 days','+21 minutes'))",
+      "params": [
+        "perf-act-060",
+        "perf-vio-22",
+        "{{partner}}",
+        "resolved",
+        "Confirmed on a walk-through."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__violations (id, unit_id, issued_by, category, description, cure_deadline, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-90 days','+22 minutes'), strftime('%Y-%m-%dT%H:%M:%fZ','now','-87 days','+22 minutes'))",
+      "params": [
+        "perf-vio-23",
+        "{{partner}}",
+        "{{me}}",
+        "noise",
+        "Excessive noise after quiet hours on Saturday night (repeat notice).",
+        "{{date:-80}}",
+        "escalated"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-90 days','+23 minutes'))",
+      "params": [
+        "perf-act-061",
+        "perf-vio-23",
+        "{{me}}",
+        "issued",
+        "Category: noise"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-88 days','+22 minutes'))",
+      "params": [
+        "perf-act-062",
+        "perf-vio-23",
+        "{{me}}",
+        "note_added",
+        "Second notice sent by mail."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-87 days','+22 minutes'))",
+      "params": [
+        "perf-act-063",
+        "perf-vio-23",
+        "{{me}}",
+        "escalated",
+        "No response after two notices. Referred for a hearing."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__violations (id, unit_id, issued_by, category, description, cure_deadline, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-94 days','+23 minutes'), strftime('%Y-%m-%dT%H:%M:%fZ','now','-91 days','+23 minutes'))",
+      "params": [
+        "perf-vio-24",
+        "{{adult2}}",
+        "{{me}}",
+        "trash",
+        "Bins left at the kerb four days after collection (repeat notice).",
+        "{{date:-84}}",
+        "resolved"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-94 days','+24 minutes'))",
+      "params": [
+        "perf-act-064",
+        "perf-vio-24",
+        "{{me}}",
+        "issued",
+        "Category: trash"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-93 days','+23 minutes'))",
+      "params": [
+        "perf-act-065",
+        "perf-vio-24",
+        "{{adult2}}",
+        "acknowledged",
+        "Understood, fixing it."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-92 days','+23 minutes'))",
+      "params": [
+        "perf-act-066",
+        "perf-vio-24",
+        "{{adult2}}",
+        "responded",
+        "Done, photo attached at the gate."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-91 days','+23 minutes'))",
+      "params": [
+        "perf-act-067",
+        "perf-vio-24",
+        "{{me}}",
+        "resolved",
+        "Confirmed on a walk-through."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__violations (id, unit_id, issued_by, category, description, cure_deadline, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-98 days','+24 minutes'), strftime('%Y-%m-%dT%H:%M:%fZ','now','-95 days','+24 minutes'))",
+      "params": [
+        "perf-vio-25",
+        "{{adult2}}",
+        "{{partner}}",
+        "pets",
+        "Dog off leash in the common area, second report this month (repeat notice).",
+        "{{date:-88}}",
+        "resolved"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-98 days','+25 minutes'))",
+      "params": [
+        "perf-act-068",
+        "perf-vio-25",
+        "{{partner}}",
+        "issued",
+        "Category: pets"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-97 days','+24 minutes'))",
+      "params": [
+        "perf-act-069",
+        "perf-vio-25",
+        "{{adult2}}",
+        "acknowledged",
+        "Understood, fixing it."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-96 days','+24 minutes'))",
+      "params": [
+        "perf-act-070",
+        "perf-vio-25",
+        "{{adult2}}",
+        "responded",
+        "Done, photo attached at the gate."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-95 days','+24 minutes'))",
+      "params": [
+        "perf-act-071",
+        "perf-vio-25",
+        "{{partner}}",
+        "resolved",
+        "Confirmed on a walk-through."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__violations (id, unit_id, issued_by, category, description, cure_deadline, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-102 days','+25 minutes'), strftime('%Y-%m-%dT%H:%M:%fZ','now','-99 days','+25 minutes'))",
+      "params": [
+        "perf-vio-26",
+        "{{me}}",
+        "{{partner}}",
+        "architectural",
+        "Fence painted a colour that was not approved by the review committee (repeat notice).",
+        "{{date:-92}}",
+        "resolved"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-102 days','+26 minutes'))",
+      "params": [
+        "perf-act-072",
+        "perf-vio-26",
+        "{{partner}}",
+        "issued",
+        "Category: architectural"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-101 days','+25 minutes'))",
+      "params": [
+        "perf-act-073",
+        "perf-vio-26",
+        "{{me}}",
+        "acknowledged",
+        "Understood, fixing it."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-100 days','+25 minutes'))",
+      "params": [
+        "perf-act-074",
+        "perf-vio-26",
+        "{{me}}",
+        "responded",
+        "Done, photo attached at the gate."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-99 days','+25 minutes'))",
+      "params": [
+        "perf-act-075",
+        "perf-vio-26",
+        "{{partner}}",
+        "resolved",
+        "Confirmed on a walk-through."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__violations (id, unit_id, issued_by, category, description, cure_deadline, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-106 days','+26 minutes'), strftime('%Y-%m-%dT%H:%M:%fZ','now','-103 days','+26 minutes'))",
+      "params": [
+        "perf-vio-27",
+        "{{partner}}",
+        "{{me}}",
+        "other",
+        "Holiday lights still up past the 30-day window (repeat notice).",
+        "{{date:-96}}",
+        "escalated"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-106 days','+27 minutes'))",
+      "params": [
+        "perf-act-076",
+        "perf-vio-27",
+        "{{me}}",
+        "issued",
+        "Category: other"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-104 days','+26 minutes'))",
+      "params": [
+        "perf-act-077",
+        "perf-vio-27",
+        "{{me}}",
+        "note_added",
+        "Second notice sent by mail."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-103 days','+26 minutes'))",
+      "params": [
+        "perf-act-078",
+        "perf-vio-27",
+        "{{me}}",
+        "escalated",
+        "No response after two notices. Referred for a hearing."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__violations (id, unit_id, issued_by, category, description, cure_deadline, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-110 days','+27 minutes'), strftime('%Y-%m-%dT%H:%M:%fZ','now','-107 days','+27 minutes'))",
+      "params": [
+        "perf-vio-28",
+        "{{adult2}}",
+        "{{me}}",
+        "parking",
+        "Trailer parked in a visitor space overnight (repeat notice).",
+        "{{date:-100}}",
+        "resolved"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-110 days','+28 minutes'))",
+      "params": [
+        "perf-act-079",
+        "perf-vio-28",
+        "{{me}}",
+        "issued",
+        "Category: parking"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-109 days','+27 minutes'))",
+      "params": [
+        "perf-act-080",
+        "perf-vio-28",
+        "{{adult2}}",
+        "acknowledged",
+        "Understood, fixing it."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-108 days','+27 minutes'))",
+      "params": [
+        "perf-act-081",
+        "perf-vio-28",
+        "{{adult2}}",
+        "responded",
+        "Done, photo attached at the gate."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-107 days','+27 minutes'))",
+      "params": [
+        "perf-act-082",
+        "perf-vio-28",
+        "{{me}}",
+        "resolved",
+        "Confirmed on a walk-through."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__violations (id, unit_id, issued_by, category, description, cure_deadline, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-114 days','+28 minutes'), strftime('%Y-%m-%dT%H:%M:%fZ','now','-111 days','+28 minutes'))",
+      "params": [
+        "perf-vio-29",
+        "{{me}}",
+        "{{partner}}",
+        "landscaping",
+        "Dead tree in the front yard has not been removed (repeat notice).",
+        "{{date:-104}}",
+        "resolved"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-114 days','+29 minutes'))",
+      "params": [
+        "perf-act-083",
+        "perf-vio-29",
+        "{{partner}}",
+        "issued",
+        "Category: landscaping"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-113 days','+28 minutes'))",
+      "params": [
+        "perf-act-084",
+        "perf-vio-29",
+        "{{me}}",
+        "acknowledged",
+        "Understood, fixing it."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-112 days','+28 minutes'))",
+      "params": [
+        "perf-act-085",
+        "perf-vio-29",
+        "{{me}}",
+        "responded",
+        "Done, photo attached at the gate."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-111 days','+28 minutes'))",
+      "params": [
+        "perf-act-086",
+        "perf-vio-29",
+        "{{partner}}",
+        "resolved",
+        "Confirmed on a walk-through."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__violations (id, unit_id, issued_by, category, description, cure_deadline, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-118 days','+29 minutes'), strftime('%Y-%m-%dT%H:%M:%fZ','now','-115 days','+29 minutes'))",
+      "params": [
+        "perf-vio-30",
+        "{{adult2}}",
+        "{{me}}",
+        "noise",
+        "Power tools running before 7am on a weekday (repeat notice).",
+        "{{date:-108}}",
+        "resolved"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-118 days','+30 minutes'))",
+      "params": [
+        "perf-act-087",
+        "perf-vio-30",
+        "{{me}}",
+        "issued",
+        "Category: noise"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-117 days','+29 minutes'))",
+      "params": [
+        "perf-act-088",
+        "perf-vio-30",
+        "{{adult2}}",
+        "acknowledged",
+        "Understood, fixing it."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-116 days','+29 minutes'))",
+      "params": [
+        "perf-act-089",
+        "perf-vio-30",
+        "{{adult2}}",
+        "responded",
+        "Done, photo attached at the gate."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-115 days','+29 minutes'))",
+      "params": [
+        "perf-act-090",
+        "perf-vio-30",
+        "{{me}}",
+        "resolved",
+        "Confirmed on a walk-through."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__violations (id, unit_id, issued_by, category, description, cure_deadline, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-122 days','+30 minutes'), strftime('%Y-%m-%dT%H:%M:%fZ','now','-119 days','+30 minutes'))",
+      "params": [
+        "perf-vio-31",
+        "{{adult2}}",
+        "{{me}}",
+        "trash",
+        "Bulk items left beside the dumpster enclosure (repeat notice).",
+        "{{date:-112}}",
+        "escalated"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-122 days','+31 minutes'))",
+      "params": [
+        "perf-act-091",
+        "perf-vio-31",
+        "{{me}}",
+        "issued",
+        "Category: trash"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-120 days','+30 minutes'))",
+      "params": [
+        "perf-act-092",
+        "perf-vio-31",
+        "{{me}}",
+        "note_added",
+        "Second notice sent by mail."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-119 days','+30 minutes'))",
+      "params": [
+        "perf-act-093",
+        "perf-vio-31",
+        "{{me}}",
+        "escalated",
+        "No response after two notices. Referred for a hearing."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__violations (id, unit_id, issued_by, category, description, cure_deadline, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-126 days','+31 minutes'), strftime('%Y-%m-%dT%H:%M:%fZ','now','-123 days','+31 minutes'))",
+      "params": [
+        "perf-vio-32",
+        "{{partner}}",
+        "{{me}}",
+        "pets",
+        "Pet waste not picked up along the walking path (repeat notice).",
+        "{{date:-116}}",
+        "resolved"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-126 days','+32 minutes'))",
+      "params": [
+        "perf-act-094",
+        "perf-vio-32",
+        "{{me}}",
+        "issued",
+        "Category: pets"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-125 days','+31 minutes'))",
+      "params": [
+        "perf-act-095",
+        "perf-vio-32",
+        "{{partner}}",
+        "acknowledged",
+        "Understood, fixing it."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-124 days','+31 minutes'))",
+      "params": [
+        "perf-act-096",
+        "perf-vio-32",
+        "{{partner}}",
+        "responded",
+        "Done, photo attached at the gate."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-123 days','+31 minutes'))",
+      "params": [
+        "perf-act-097",
+        "perf-vio-32",
+        "{{me}}",
+        "resolved",
+        "Confirmed on a walk-through."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__violations (id, unit_id, issued_by, category, description, cure_deadline, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-130 days','+32 minutes'), strftime('%Y-%m-%dT%H:%M:%fZ','now','-127 days','+32 minutes'))",
+      "params": [
+        "perf-vio-33",
+        "{{adult2}}",
+        "{{partner}}",
+        "architectural",
+        "Satellite dish mounted on the front elevation (repeat notice).",
+        "{{date:-120}}",
+        "resolved"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-130 days','+33 minutes'))",
+      "params": [
+        "perf-act-098",
+        "perf-vio-33",
+        "{{partner}}",
+        "issued",
+        "Category: architectural"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-129 days','+32 minutes'))",
+      "params": [
+        "perf-act-099",
+        "perf-vio-33",
+        "{{adult2}}",
+        "acknowledged",
+        "Understood, fixing it."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-128 days','+32 minutes'))",
+      "params": [
+        "perf-act-100",
+        "perf-vio-33",
+        "{{adult2}}",
+        "responded",
+        "Done, photo attached at the gate."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-127 days','+32 minutes'))",
+      "params": [
+        "perf-act-101",
+        "perf-vio-33",
+        "{{partner}}",
+        "resolved",
+        "Confirmed on a walk-through."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__violations (id, unit_id, issued_by, category, description, cure_deadline, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-134 days','+33 minutes'), strftime('%Y-%m-%dT%H:%M:%fZ','now','-131 days','+33 minutes'))",
+      "params": [
+        "perf-vio-34",
+        "{{me}}",
+        "{{partner}}",
+        "parking",
+        "Permit not displayed on a vehicle in an assigned spot (repeat notice).",
+        "{{date:-124}}",
+        "resolved"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-134 days','+34 minutes'))",
+      "params": [
+        "perf-act-102",
+        "perf-vio-34",
+        "{{partner}}",
+        "issued",
+        "Category: parking"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-133 days','+33 minutes'))",
+      "params": [
+        "perf-act-103",
+        "perf-vio-34",
+        "{{me}}",
+        "acknowledged",
+        "Understood, fixing it."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-132 days','+33 minutes'))",
+      "params": [
+        "perf-act-104",
+        "perf-vio-34",
+        "{{me}}",
+        "responded",
+        "Done, photo attached at the gate."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-131 days','+33 minutes'))",
+      "params": [
+        "perf-act-105",
+        "perf-vio-34",
+        "{{partner}}",
+        "resolved",
+        "Confirmed on a walk-through."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__violations (id, unit_id, issued_by, category, description, cure_deadline, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-138 days','+34 minutes'), strftime('%Y-%m-%dT%H:%M:%fZ','now','-135 days','+34 minutes'))",
+      "params": [
+        "perf-vio-35",
+        "{{partner}}",
+        "{{me}}",
+        "other",
+        "Storage pod left on the driveway beyond the two-week limit (repeat notice).",
+        "{{date:-128}}",
+        "escalated"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-138 days','+35 minutes'))",
+      "params": [
+        "perf-act-106",
+        "perf-vio-35",
+        "{{me}}",
+        "issued",
+        "Category: other"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-136 days','+34 minutes'))",
+      "params": [
+        "perf-act-107",
+        "perf-vio-35",
+        "{{me}}",
+        "note_added",
+        "Second notice sent by mail."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-135 days','+34 minutes'))",
+      "params": [
+        "perf-act-108",
+        "perf-vio-35",
+        "{{me}}",
+        "escalated",
+        "No response after two notices. Referred for a hearing."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__violations (id, unit_id, issued_by, category, description, cure_deadline, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-142 days','+35 minutes'), strftime('%Y-%m-%dT%H:%M:%fZ','now','-139 days','+35 minutes'))",
+      "params": [
+        "perf-vio-36",
+        "{{adult2}}",
+        "{{me}}",
+        "landscaping",
+        "Hedge overgrowing the shared pavement (repeat notice).",
+        "{{date:-132}}",
+        "resolved"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-142 days','+36 minutes'))",
+      "params": [
+        "perf-act-109",
+        "perf-vio-36",
+        "{{me}}",
+        "issued",
+        "Category: landscaping"
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-141 days','+35 minutes'))",
+      "params": [
+        "perf-act-110",
+        "perf-vio-36",
+        "{{adult2}}",
+        "acknowledged",
+        "Understood, fixing it."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-140 days','+35 minutes'))",
+      "params": [
+        "perf-act-111",
+        "perf-vio-36",
+        "{{adult2}}",
+        "responded",
+        "Done, photo attached at the gate."
+      ]
+    },
+    {
+      "sql": "INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now','-139 days','+35 minutes'))",
+      "params": [
+        "perf-act-112",
+        "perf-vio-36",
+        "{{me}}",
+        "resolved",
+        "Confirmed on a walk-through."
+      ]
+    }
+  ]
+}
