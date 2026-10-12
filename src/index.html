@@ -108,6 +108,7 @@
       font-size: 0.95rem;
     }
     .empty-icon { margin-bottom: 12px; }
+    .app-error { margin: 12px 0; padding: 10px 14px; border: 1px solid var(--hub-tint-danger-fg, #dc2626); border-radius: var(--radius); background: var(--card); color: var(--hub-tint-danger-fg, #dc2626); font-size: 0.88rem; }
 
     /* Modal */
     .modal-backdrop {
@@ -174,6 +175,8 @@
       background: var(--surface, var(--card, #fff)); color: var(--text, inherit);
     }
     .search-input:focus { outline: none; border-color: var(--accent, #6366f1); }
+    .load-error { margin: 0 0 12px; padding: 10px 14px; border-radius: 10px; background: var(--hub-tint-danger, #fee2e2); color: var(--hub-tint-danger-fg, #b91c1c); font-size: 0.9rem; display: flex; gap: 10px; align-items: center; justify-content: space-between; }
+    .load-error-retry { background: none; border: 1px solid currentColor; border-radius: 8px; padding: 5px 10px; font: inherit; font-weight: 600; color: inherit; cursor: pointer; flex-shrink: 0; }
   </style>
 </head>
 <body>
@@ -213,6 +216,7 @@ let settings  = { board_group_id: null };
 let activeTab = "all";
 let unitFilter = "";
 let modalEl   = null;
+let errorMsg  = "";     // the last refusal or failure, shown under the header
 
 let memberMap = new Map();
 let allActivity = [];
@@ -258,9 +262,9 @@ async function db(sql, params = []) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ sql, params }),
   });
-  const body = await res.json().catch(() => ({}));
-  if (!res.ok || body.error) {
-    throw new Error(body.error ?? `Database request failed (${res.status})`);
+  const body = await res.json().catch(() => null);
+  if (!res.ok || !body || typeof body !== "object" || body.error) {
+    throw new Error(body?.error ?? `Database request failed (${res.status})`);
   }
   return body;
 }
@@ -280,12 +284,15 @@ async function loadContext() {
     memberMap = new Map(members.map(m => [m.id, m]));
     return;
   }
-  try {
-    const res  = await fetch(`${CONTEXT}?keys=family.members,family.groups`);
-    const data = await res.json();
-    members = data["family.members"] ?? [];
-    groups  = data["family.groups"]  ?? [];
-  } catch { members = []; groups = []; }
+  // Throws when the context cannot be read, so firstLoad shows the banner:
+  // with no groups nobody reads as the board.
+  const res  = await fetch(`${CONTEXT}?keys=family.members,family.groups`);
+  const data = await res.json().catch(() => null);
+  if (!res.ok || !data || typeof data !== "object" || data.error) throw new Error("Couldn’t reach the hub. Try again.");
+  // A 200 can still name a key the hub failed to read: that is a failed read too.
+  if (Array.isArray(data.$errors) && data.$errors.some(k => k === "family.members" || k === "family.groups")) throw new Error("Couldn’t reach the hub. Try again.");
+  members = data["family.members"] ?? [];
+  groups  = data["family.groups"]  ?? [];
   memberMap = new Map(members.map(m => [m.id, m]));
 }
 
@@ -467,6 +474,7 @@ function actionLabel(action) {
 // ---- modal ----
 function openModal(html) {
   closeModal();
+  if (errorMsg) { errorMsg = ""; render(); }
   modalEl = document.createElement("div");
   modalEl.className = "modal-backdrop";
   modalEl.innerHTML = `<div class="modal">${html}</div>`;
@@ -475,6 +483,22 @@ function openModal(html) {
 }
 function closeModal() { modalEl?.remove(); modalEl = null; }
 window.closeModal = closeModal;
+
+// Reports a failure where the user is looking: inside the open dialog (which
+// keeps what they typed), otherwise in a banner under the header.
+function showError(e) {
+  const msg = e?.message || "Something went wrong. Try again.";
+  const actions = modalEl?.querySelector(".modal-actions");
+  if (!actions) { errorMsg = msg; render(); return; }
+  let el = modalEl.querySelector(".app-error");
+  if (!el) {
+    el = document.createElement("div");
+    el.className = "app-error";
+    el.setAttribute("role", "alert");
+    actions.before(el);
+  }
+  el.textContent = msg;
+}
 
 // ---- filters ----
 function filteredViolations() {
@@ -528,7 +552,7 @@ function render() {
       </select>
     </div>` : "";
 
-  const cardsHtml = list.length === 0
+  const cardsHtml = loadFailed ? "" : list.length === 0
     ? (searchQ
       ? `<div class="empty"><div class="empty-icon">${chickadee("searching")}</div>Nothing matches "${esc(searchQ)}".</div>`
       : `<div class="empty"><div class="empty-icon">${chickadee("sleeping")}</div>No violations found.</div>`)
@@ -555,11 +579,11 @@ function render() {
           </div>`;
       }).join("");
 
-  const settingsBtn = ME?.isAdmin
+  const settingsBtn = ME?.isAdmin && !loadFailed
     ? `<button class="btn-icon" onclick="openSettingsModal()" title="Settings" aria-label="Settings">${glyph("gear", { accent: "currentColor" })}</button>`
     : "";
 
-  const issueBtn = canIssueViolation()
+  const issueBtn = canIssueViolation() && !loadFailed
     ? `<button class="btn btn-icon" data-testid="issue-notice" onclick="openIssueModal()" title="Issue Notice" aria-label="Issue Notice">${glyph("plus", { accent: "currentColor" })}</button>`
     : "";
 
@@ -573,6 +597,8 @@ function render() {
       </div>
       <div class="header-actions">${issueBtn}${settingsBtn}</div>
     </header>
+    ${loadFailed ? `<div class="load-error" data-testid="load-error" role="alert"><span>Couldn’t load the notices.</span> <button type="button" class="load-error-retry" data-testid="load-retry">Try again</button></div>` : ""}
+    ${errorMsg ? `<div class="app-error" role="alert">${esc(errorMsg)}</div>` : ""}
     <div class="filters">${tabsHtml}</div>
     ${unitFilterHtml}
     ${scoped.length ? `<div class="search-row"><input id="search" class="search-input" type="search" placeholder="Search notices…" aria-label="Search notices" value="${esc(searchQ)}" /></div>` : ""}
@@ -662,19 +688,22 @@ window.submitIssue = async function() {
     closeModal();
     render();
 
-    // Persist + side effects in background
-    if (DB) {
-      db(
+    // Persist in background. The activity row inherits from the notice, so it
+    // and the notification go out only once the notice itself is stored.
+    const saved = DB
+      ? db(
         `INSERT INTO app_violation_tracking__violations (id, unit_id, issued_by, category, description, photo_file_id, cure_deadline, status, created_at, updated_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, 'open', ?, ?)`,
         [id, unitId, ME?.id ?? "system", category, desc, photoFileId, deadline, now, now]
-      ).catch(() => { violations = violations.filter(v => v.id !== id); render(); });
-    }
-    logActivity(id, "issued", `Category: ${category}`).catch(() => {});
-    notify(`Violation Notice`, `A new ${category} violation notice has been issued for ${memberName(unitId)}.`, violationAudience(unitId)).catch(() => {});
+      )
+      : Promise.resolve();
+    saved.then(() => {
+      logActivity(id, "issued", `Category: ${category}`).catch(() => {});
+      notify(`Violation Notice`, `A new ${category} violation notice has been issued for ${memberName(unitId)}.`, violationAudience(unitId)).catch(() => {});
+    }, e => { violations = violations.filter(v => v.id !== id); showError(e); });
   } catch (e) {
     if (btn) { btn.disabled = false; btn.textContent = "Issue Notice"; }
-    throw e;
+    showError(e);
   }
 };
 
@@ -789,8 +818,7 @@ async function memberStatusAction(violationId, action, detail, btn) {
     render();
     openDetail(violationId);
   } catch (e) {
-    if (btn) { btn.disabled = false; }
-    throw e;
+    showError(e);
   }
 }
 
@@ -815,7 +843,7 @@ window.submitResponse = async function(id, btn) {
     renderDetail(v, loadActivity(id));
   } catch (e) {
     if (btn) { btn.disabled = false; btn.textContent = "Add Response"; }
-    throw e;
+    showError(e);
   }
 };
 
@@ -825,24 +853,33 @@ window.submitResponse = async function(id, btn) {
 async function boardStatusAction(violationId, newStatus, btn) {
   const note = document.getElementById("d-note")?.value?.trim() ?? "";
   if (btn) { btn.disabled = true; btn.textContent = "Saving…"; }
+  const v = violations.find(x => x.id === violationId);
+  const before = v ? { status: v.status, updated_at: v.updated_at } : null;
+  let saved = false;
   try {
     const now = new Date().toISOString();
 
     // Optimistic: update local state, close modal, render immediately
-    const v = violations.find(x => x.id === violationId);
     if (v) { v.status = newStatus; v.updated_at = now; }
     closeModal();
     render();
 
-    // DB write and activity log in parallel; re-open detail once both commit
-    await Promise.all([
-      DB ? db(`UPDATE app_violation_tracking__violations SET status = ?, updated_at = ? WHERE id = ?`, [newStatus, now, violationId]) : Promise.resolve(),
-      logActivity(violationId, newStatus, note),
-    ]);
+    // The status write goes first: the hub answers zero rows when the caller
+    // may no longer write this notice, and then nothing is logged either.
+    if (DB) {
+      const { changed } = await db(`UPDATE app_violation_tracking__violations SET status = ?, updated_at = ? WHERE id = ?`, [newStatus, now, violationId]);
+      if (changed === 0) {
+        await loadViolations().catch(() => { if (v && before) Object.assign(v, before); });
+        showError(new Error("This notice can no longer be changed."));
+        return;
+      }
+    }
+    saved = true;
+    await logActivity(violationId, newStatus, note);
     openDetail(violationId);
   } catch (e) {
-    if (btn) { btn.disabled = false; }
-    throw e;
+    if (!saved && v && before) Object.assign(v, before);
+    showError(e);
   }
 }
 
@@ -859,7 +896,7 @@ window.submitNote = async function(id, btn) {
     renderDetail(v, loadActivity(id));
   } catch (e) {
     if (btn) { btn.disabled = false; btn.textContent = "Save Note"; }
-    throw e;
+    showError(e);
   }
 };
 
@@ -905,7 +942,7 @@ window.saveSettings = async function() {
     render();
   } catch (e) {
     if (btn) { btn.disabled = false; btn.textContent = "Save"; }
-    throw e;
+    showError(e);
   }
 };
 
@@ -917,13 +954,24 @@ function handleDeepLink() {
 }
 
 // ---- init ----
-(async () => {
-  await Promise.all([loadContext(), loadSettings()]);
-  await processPendingInbox();
-  await Promise.all([loadViolations(), loadAllActivity()]);
+// The first load failed: the notices are unknown, not absent.
+let loadFailed = false;
+
+async function firstLoad() {
+  try {
+    await Promise.all([loadContext(), loadSettings()]);
+    await processPendingInbox();
+    await Promise.all([loadViolations(), loadAllActivity()]);
+    loadFailed = false;
+  } catch { loadFailed = true; }
   render();
-  handleDeepLink();
-})();
+  if (!loadFailed) handleDeepLink();
+}
+
+document.addEventListener("click", (e) => {
+  if (e.target.closest('[data-testid="load-retry"]')) firstLoad();
+});
+firstLoad();
 </script>
 </body>
 </html>
