@@ -486,8 +486,14 @@ window.closeModal = closeModal;
 
 // Reports a failure where the user is looking: inside the open dialog (which
 // keeps what they typed), otherwise in a banner under the header.
-function showError(e) {
-  const msg = e?.message || "Something went wrong. Try again.";
+//
+// Only a message the app wrote for the user (`forUser`) or the hub's own
+// refusal of a photo (too large, type not allowed, too many uploads, storage
+// full) is shown as given; any other failure gets the caller's fixed line.
+function showError(e, line = "Couldn’t save — try again.") {
+  const asGiven = e?.forUser || [413, 415, 429, 507].includes(e?.status);
+  if (!asGiven) console.error(e);
+  const msg = asGiven && e.message ? e.message : line;
   const actions = modalEl?.querySelector(".modal-actions");
   if (!actions) { errorMsg = msg; render(); return; }
   let el = modalEl.querySelector(".app-error");
@@ -700,10 +706,10 @@ window.submitIssue = async function() {
     saved.then(() => {
       logActivity(id, "issued", `Category: ${category}`).catch(() => {});
       notify(`Violation Notice`, `A new ${category} violation notice has been issued for ${memberName(unitId)}.`, violationAudience(unitId)).catch(() => {});
-    }, e => { violations = violations.filter(v => v.id !== id); showError(e); });
+    }, e => { violations = violations.filter(v => v.id !== id); showError(e, "Couldn’t issue the notice — try again."); });
   } catch (e) {
     if (btn) { btn.disabled = false; btn.textContent = "Issue Notice"; }
-    showError(e);
+    showError(e, "Couldn’t issue the notice — try again.");
   }
 };
 
@@ -818,7 +824,7 @@ async function memberStatusAction(violationId, action, detail, btn) {
     render();
     openDetail(violationId);
   } catch (e) {
-    showError(e);
+    showError(e, "Couldn’t save your response — try again.");
   }
 }
 
@@ -843,7 +849,7 @@ window.submitResponse = async function(id, btn) {
     renderDetail(v, loadActivity(id));
   } catch (e) {
     if (btn) { btn.disabled = false; btn.textContent = "Add Response"; }
-    showError(e);
+    showError(e, "Couldn’t add the response — try again.");
   }
 };
 
@@ -870,7 +876,7 @@ async function boardStatusAction(violationId, newStatus, btn) {
       const { changed } = await db(`UPDATE app_violation_tracking__violations SET status = ?, updated_at = ? WHERE id = ?`, [newStatus, now, violationId]);
       if (changed === 0) {
         await loadViolations().catch(() => { if (v && before) Object.assign(v, before); });
-        showError(new Error("This notice can no longer be changed."));
+        showError(Object.assign(new Error("This notice can no longer be changed."), { forUser: true }));
         return;
       }
     }
@@ -879,7 +885,7 @@ async function boardStatusAction(violationId, newStatus, btn) {
     openDetail(violationId);
   } catch (e) {
     if (!saved && v && before) Object.assign(v, before);
-    showError(e);
+    showError(e, "Couldn’t update the notice — try again.");
   }
 }
 
@@ -896,7 +902,7 @@ window.submitNote = async function(id, btn) {
     renderDetail(v, loadActivity(id));
   } catch (e) {
     if (btn) { btn.disabled = false; btn.textContent = "Save Note"; }
-    showError(e);
+    showError(e, "Couldn’t save the note — try again.");
   }
 };
 
@@ -942,7 +948,7 @@ window.saveSettings = async function() {
     render();
   } catch (e) {
     if (btn) { btn.disabled = false; btn.textContent = "Save"; }
-    showError(e);
+    showError(e, "Couldn’t save the settings — try again.");
   }
 };
 
