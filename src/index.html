@@ -119,6 +119,7 @@
     @media (min-width: 540px) {
       .modal-backdrop { align-items: center; padding: 16px; }
     }
+    .modal[inert] .btn { opacity: .5; cursor: default; }
     .modal {
       background: var(--card); border-radius: var(--radius) var(--radius) 0 0;
       width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto;
@@ -216,6 +217,7 @@ let settings  = { board_group_id: null };
 let activeTab = "all";
 let unitFilter = "";
 let modalEl   = null;
+let modalBusy = false;  // a save from the open dialog is out (see whileSaving)
 let errorMsg  = "";     // the last refusal or failure, shown under the header
 
 let memberMap = new Map();
@@ -265,6 +267,23 @@ async function db(sql, params = []) {
   const body = await res.json().catch(() => null);
   if (!res.ok || !body || typeof body !== "object" || body.error) {
     throw new Error(body?.error ?? `Database request failed (${res.status})`);
+  }
+  return body;
+}
+
+// Atomic multi-statement form of /api/db: the statements land whole or not at
+// all. A statement carrying `requireChanges` that matches no row rolls the
+// batch back and the hub answers 409, which the caller reads off `status`.
+async function dbBatch(statements) {
+  if (!DB) return { results: [] };
+  const res = await fetch(DB, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ statements }),
+  });
+  const body = await res.json().catch(() => null);
+  if (!res.ok || !body || typeof body !== "object" || body.error) {
+    throw Object.assign(new Error(body?.error ?? `Database request failed (${res.status})`), { status: res.status });
   }
   return body;
 }
@@ -473,16 +492,40 @@ function actionLabel(action) {
 
 // ---- modal ----
 function openModal(html) {
+  if (modalBusy) return;
   closeModal();
   if (errorMsg) { errorMsg = ""; render(); }
   modalEl = document.createElement("div");
   modalEl.className = "modal-backdrop";
   modalEl.innerHTML = `<div class="modal">${html}</div>`;
-  modalEl.addEventListener("click", e => { if (e.target === modalEl) closeModal(); });
+  modalEl.addEventListener("click", e => { if (e.target === modalEl) dismissModal(); });
   document.body.appendChild(modalEl);
 }
 function closeModal() { modalEl?.remove(); modalEl = null; }
-window.closeModal = closeModal;
+// What Cancel, Close and a click on the backdrop do: nothing while a save is out.
+function dismissModal() { if (!modalBusy) closeModal(); }
+window.closeModal = dismissModal;
+
+// One save at a time per dialog. While it runs the dialog is inert (no click,
+// no typing) and cannot be dismissed, so it is the same dialog, as typed, when
+// the hub answers. Returns what `save` returns, or undefined when a save is
+// already out.
+async function whileSaving(btn, busyLabel, save) {
+  if (modalBusy) return undefined;
+  modalBusy = true;
+  const dialog = modalEl?.firstElementChild;
+  const label = btn?.textContent;
+  if (dialog) dialog.inert = true;
+  if (btn) btn.textContent = busyLabel;
+  modalEl?.querySelector(".app-error")?.remove();
+  try {
+    return await save();
+  } finally {
+    modalBusy = false;
+    if (dialog) dialog.inert = false;
+    if (btn) btn.textContent = label;
+  }
+}
 
 // Reports a failure where the user is looking: inside the open dialog (which
 // keeps what they typed), otherwise in a banner under the header.
@@ -675,42 +718,42 @@ window.submitIssue = async function() {
   if (!deadline) { document.getElementById("f-deadline").focus(); return; }
 
   const btn = modalEl?.querySelector(".modal-actions .btn-primary");
-  if (btn) { btn.disabled = true; btn.textContent = "Issuing…"; }
+  const id  = crypto.randomUUID();
+  const now = new Date().toISOString();
+  // The form stays open, as typed, until the notice is stored.
+  const stored = await whileSaving(btn, "Issuing…", async () => {
+    try {
+      let photoFileId = null;
+      if (photoInput?.files?.[0]) {
+        const { id } = await files.upload(photoInput.files[0]);
+        photoFileId = id;
+      }
 
-  try {
-    let photoFileId = null;
-    if (photoInput?.files?.[0]) {
-      const { id } = await files.upload(photoInput.files[0]);
-      photoFileId = id;
+      if (DB) {
+        await db(
+          `INSERT INTO app_violation_tracking__violations (id, unit_id, issued_by, category, description, photo_file_id, cure_deadline, status, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, 'open', ?, ?)`,
+          [id, unitId, ME?.id ?? "system", category, desc, photoFileId, deadline, now, now]
+        );
+      }
+
+      violations.unshift({ id, unit_id: unitId, issued_by: ME?.id ?? "system", category,
+        description: desc, photo_file_id: photoFileId, cure_deadline: deadline,
+        status: "open", created_at: now, updated_at: now });
+      return true;
+    } catch (e) {
+      showError(e, "Couldn’t issue the notice — try again.");
+      return false;
     }
+  });
+  if (!stored) return;
 
-    const id  = crypto.randomUUID();
-    const now = new Date().toISOString();
-
-    // Optimistic: add to local state, close modal, render immediately
-    violations.unshift({ id, unit_id: unitId, issued_by: ME?.id ?? "system", category,
-      description: desc, photo_file_id: photoFileId, cure_deadline: deadline,
-      status: "open", created_at: now, updated_at: now });
-    closeModal();
-    render();
-
-    // Persist in background. The activity row inherits from the notice, so it
-    // and the notification go out only once the notice itself is stored.
-    const saved = DB
-      ? db(
-        `INSERT INTO app_violation_tracking__violations (id, unit_id, issued_by, category, description, photo_file_id, cure_deadline, status, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, 'open', ?, ?)`,
-        [id, unitId, ME?.id ?? "system", category, desc, photoFileId, deadline, now, now]
-      )
-      : Promise.resolve();
-    saved.then(() => {
-      logActivity(id, "issued", `Category: ${category}`).catch(() => {});
-      notify(`Violation Notice`, `A new ${category} violation notice has been issued for ${memberName(unitId)}.`, violationAudience(unitId)).catch(() => {});
-    }, e => { violations = violations.filter(v => v.id !== id); showError(e, "Couldn’t issue the notice — try again."); });
-  } catch (e) {
-    if (btn) { btn.disabled = false; btn.textContent = "Issue Notice"; }
-    showError(e, "Couldn’t issue the notice — try again.");
-  }
+  // The notice is stored. The activity row inherits from it, so it and the
+  // notification go out only now; neither can report the notice as failed.
+  closeModal();
+  render();
+  logActivity(id, "issued", `Category: ${category}`).catch(e => console.error(e));
+  notify(`Violation Notice`, `A new ${category} violation notice has been issued for ${memberName(unitId)}.`, violationAudience(unitId)).catch(() => {});
 };
 
 // ---- detail modal ----
@@ -763,11 +806,11 @@ function renderDetail(v, activity) {
   const boardActions = boardView && (canResolve(ev) || canEscalate(ev)) ? `
     <div class="section-title" data-testid="board-actions">Board Actions</div>
     <div class="form-group">
-      <textarea id="d-note" placeholder="Internal note (optional)…"></textarea>
+      <textarea id="d-note" data-testid="board-note" placeholder="Internal note (optional)…"></textarea>
     </div>
     <div class="board-actions">
-      ${canResolve(ev)   ? `<button class="btn btn-sm btn-green"  onclick="submitResolve(${jsArg(v.id)}, this)">Mark Resolved</button>` : ""}
-      ${canEscalate(ev)  ? `<button class="btn btn-sm btn-purple" onclick="submitEscalate(${jsArg(v.id)}, this)">Escalate</button>` : ""}
+      ${canResolve(ev)   ? `<button class="btn btn-sm btn-green"  data-testid="resolve-notice" onclick="submitResolve(${jsArg(v.id)}, this)">Mark Resolved</button>` : ""}
+      ${canEscalate(ev)  ? `<button class="btn btn-sm btn-purple" data-testid="escalate-notice" onclick="submitEscalate(${jsArg(v.id)}, this)">Escalate</button>` : ""}
       <button class="btn btn-sm btn-ghost" onclick="submitNote(${jsArg(v.id)}, this)">Save Note</button>
     </div>` : "";
 
@@ -776,7 +819,7 @@ function renderDetail(v, activity) {
       <span style="font-size:1.8rem">${glyph(categoryGlyph(v.category))}</span>
       <div>
         <div class="modal-title" style="margin-bottom:4px">${esc(v.category.charAt(0).toUpperCase() + v.category.slice(1))} Violation</div>
-        <span class="badge" style="background:${color}">${statusLabel(ev.status)}</span>
+        <span class="badge" data-testid="detail-status" style="background:${color}">${statusLabel(ev.status)}</span>
         ${overdue ? `<span class="overdue-label" style="margin-left:8px">${glyph("warning")} Overdue</span>` : ""}
       </div>
     </div>
@@ -800,7 +843,7 @@ function renderDetail(v, activity) {
     </div>
 
     <div class="section-title">Activity</div>
-    <div class="timeline">${timelineHtml}</div>
+    <div class="timeline" data-testid="detail-timeline">${timelineHtml}</div>
 
     ${memberActions}
     ${boardActions}
@@ -816,16 +859,20 @@ function renderDetail(v, activity) {
 // cannot (and must not) write the board-authoritative `violations` row. The
 // displayed status is derived from that activity by effectiveStatus().
 async function memberStatusAction(violationId, action, detail, btn) {
-  if (btn) { btn.disabled = true; btn.textContent = "Saving…"; }
-  try {
-    const logAction = action === "acknowledge" ? "acknowledged" : "disputed";
-    closeModal();
-    await logActivity(violationId, logAction, detail);
-    render();
-    openDetail(violationId);
-  } catch (e) {
-    showError(e, "Couldn’t save your response — try again.");
-  }
+  const logAction = action === "acknowledge" ? "acknowledged" : "disputed";
+  // The dialog stays open, as typed, until the response is stored.
+  const stored = await whileSaving(btn, "Saving…", async () => {
+    try {
+      await logActivity(violationId, logAction, detail);
+      return true;
+    } catch (e) {
+      showError(e, "Couldn’t save your response — try again.");
+      return false;
+    }
+  });
+  if (!stored) return;
+  render();
+  openDetail(violationId);
 }
 
 window.submitAcknowledge = async function(id, btn) {
@@ -842,15 +889,16 @@ window.submitDispute = async function(id, btn) {
 window.submitResponse = async function(id, btn) {
   const detail = document.getElementById("d-response")?.value?.trim() ?? "";
   if (!detail) { document.getElementById("d-response")?.focus(); return; }
-  if (btn) { btn.disabled = true; btn.textContent = "Saving…"; }
-  try {
-    await logActivity(id, "responded", detail);
-    const v = violations.find(x => x.id === id);
-    renderDetail(v, loadActivity(id));
-  } catch (e) {
-    if (btn) { btn.disabled = false; btn.textContent = "Add Response"; }
-    showError(e, "Couldn’t add the response — try again.");
-  }
+  const stored = await whileSaving(btn, "Saving…", async () => {
+    try {
+      await logActivity(id, "responded", detail);
+      return true;
+    } catch (e) {
+      showError(e, "Couldn’t add the response — try again.");
+      return false;
+    }
+  });
+  if (stored) renderDetail(violations.find(x => x.id === id), loadActivity(id));
 };
 
 // ---- board actions ----
@@ -858,35 +906,46 @@ window.submitResponse = async function(id, btn) {
 // the `violations` row (only the board can — the row is board-only writable).
 async function boardStatusAction(violationId, newStatus, btn) {
   const note = document.getElementById("d-note")?.value?.trim() ?? "";
-  if (btn) { btn.disabled = true; btn.textContent = "Saving…"; }
-  const v = violations.find(x => x.id === violationId);
-  const before = v ? { status: v.status, updated_at: v.updated_at } : null;
-  let saved = false;
-  try {
-    const now = new Date().toISOString();
-
-    // Optimistic: update local state, close modal, render immediately
-    if (v) { v.status = newStatus; v.updated_at = now; }
+  const now = new Date().toISOString();
+  const entry = { id: crypto.randomUUID(), violation_id: violationId, actor_id: ME?.id ?? "system", action: newStatus, detail: note, created_at: now };
+  // One transaction: the status and its timeline entry (with the note) land
+  // together or not at all. The hub narrows the update to zero rows when the
+  // caller may no longer write this notice; `requireChanges` turns that into a
+  // rolled-back batch, so nothing is logged for a change that did not happen.
+  // The dialog stays open, with the note as typed, until it is stored.
+  const outcome = await whileSaving(btn, "Saving…", async () => {
+    try {
+      await dbBatch([
+        { sql: `UPDATE app_violation_tracking__violations SET status = ?, updated_at = ? WHERE id = ?`,
+          params: [newStatus, now, violationId], requireChanges: true },
+        { sql: `INSERT INTO app_violation_tracking__activity (id, violation_id, actor_id, action, detail, created_at) VALUES (?, ?, ?, ?, ?, ?)`,
+          params: [entry.id, entry.violation_id, entry.actor_id, entry.action, entry.detail, entry.created_at] },
+      ]);
+      return "stored";
+    } catch (e) {
+      // 409 "stale state": the update matched no row. (A 409 for a file
+      // reclaim in progress is a retry, like any other failure.) The re-read
+      // runs here, while the dialog is still held.
+      if (e?.status === 409 && /stale state/i.test(String(e.message))) {
+        await loadViolations().catch(err => console.error(err));
+        return "refused";
+      }
+      showError(e, "Couldn’t update the notice — try again.");
+      return "failed";
+    }
+  });
+  if (outcome === "refused") {
     closeModal();
     render();
-
-    // The status write goes first: the hub answers zero rows when the caller
-    // may no longer write this notice, and then nothing is logged either.
-    if (DB) {
-      const { changed } = await db(`UPDATE app_violation_tracking__violations SET status = ?, updated_at = ? WHERE id = ?`, [newStatus, now, violationId]);
-      if (changed === 0) {
-        await loadViolations().catch(() => { if (v && before) Object.assign(v, before); });
-        showError(Object.assign(new Error("This notice can no longer be changed."), { forUser: true }));
-        return;
-      }
-    }
-    saved = true;
-    await logActivity(violationId, newStatus, note);
-    openDetail(violationId);
-  } catch (e) {
-    if (!saved && v && before) Object.assign(v, before);
-    showError(e, "Couldn’t update the notice — try again.");
+    showError(Object.assign(new Error("This notice can no longer be changed."), { forUser: true }));
+    return;
   }
+  if (outcome !== "stored") return;
+  const v = violations.find(x => x.id === violationId);
+  if (v) { v.status = newStatus; v.updated_at = now; }
+  allActivity.push(entry);
+  render();
+  openDetail(violationId);
 }
 
 window.submitResolve   = async (id, btn) => boardStatusAction(id, "resolved", btn);
@@ -895,15 +954,16 @@ window.submitEscalate  = async (id, btn) => boardStatusAction(id, "escalated", b
 window.submitNote = async function(id, btn) {
   const note = document.getElementById("d-note")?.value?.trim() ?? "";
   if (!note) { document.getElementById("d-note")?.focus(); return; }
-  if (btn) { btn.disabled = true; btn.textContent = "Saving…"; }
-  try {
-    await logActivity(id, "note_added", note);
-    const v = violations.find(x => x.id === id);
-    renderDetail(v, loadActivity(id));
-  } catch (e) {
-    if (btn) { btn.disabled = false; btn.textContent = "Save Note"; }
-    showError(e, "Couldn’t save the note — try again.");
-  }
+  const stored = await whileSaving(btn, "Saving…", async () => {
+    try {
+      await logActivity(id, "note_added", note);
+      return true;
+    } catch (e) {
+      showError(e, "Couldn’t save the note — try again.");
+      return false;
+    }
+  });
+  if (stored) renderDetail(violations.find(x => x.id === id), loadActivity(id));
 };
 
 // ---- settings modal ----

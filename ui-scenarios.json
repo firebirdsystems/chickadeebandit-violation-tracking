@@ -135,6 +135,210 @@
           "selector": "[data-testid=\"board-actions\"]"
         }
       ]
+    },
+    {
+      "name": "a board member resolves a notice with a note: the status and its timeline entry are stored together and are still there after a reload",
+      "members": {
+        "viewer": "adult",
+        "other": "adult"
+      },
+      "steps": [
+        {
+          "action": "seedGroup",
+          "group": "board",
+          "name": "Board of Directors",
+          "members": [
+            "viewer"
+          ]
+        },
+        {
+          "action": "seedRaw",
+          "sql": "INSERT INTO app_violation_tracking__settings (key, value) VALUES ('board_group_id', ?)",
+          "params": [
+            "{{group:board}}"
+          ]
+        },
+        {
+          "action": "seedRaw",
+          "sql": "INSERT INTO app_violation_tracking__violations (id, unit_id, issued_by, category, description, cure_deadline, status, created_at, updated_at) VALUES (?, ?, ?, 'parking', ?, date('now','+14 days'), 'open', datetime('now'), datetime('now'))",
+          "params": [
+            "ui-theirs",
+            "{{other}}",
+            "{{viewer}}",
+            "Bins left at the kerb past collection day."
+          ]
+        },
+        {
+          "action": "open",
+          "as": "viewer"
+        },
+        {
+          "action": "click",
+          "as": "viewer",
+          "selector": "[data-testid=\"violation-card\"][data-violation-id=\"ui-theirs\"]"
+        },
+        {
+          "action": "expectVisible",
+          "as": "viewer",
+          "selector": "[data-testid=\"violation-detail\"][data-violation-id=\"ui-theirs\"]"
+        },
+        {
+          "action": "expectText",
+          "as": "viewer",
+          "selector": "[data-testid=\"detail-status\"]",
+          "text": "Open"
+        },
+        {
+          "action": "fill",
+          "as": "viewer",
+          "selector": "[data-testid=\"board-note\"]",
+          "value": "Bins were taken in on Tuesday."
+        },
+        {
+          "action": "click",
+          "as": "viewer",
+          "selector": "[data-testid=\"resolve-notice\"]"
+        },
+        {
+          "action": "expectText",
+          "as": "viewer",
+          "selector": "[data-testid=\"detail-status\"]",
+          "text": "Resolved"
+        },
+        {
+          "action": "expectText",
+          "as": "viewer",
+          "selector": "[data-testid=\"detail-timeline\"]",
+          "text": "Bins were taken in on Tuesday."
+        },
+        {
+          "action": "reload",
+          "as": "viewer"
+        },
+        {
+          "action": "click",
+          "as": "viewer",
+          "selector": "[data-testid=\"violation-card\"][data-violation-id=\"ui-theirs\"]"
+        },
+        {
+          "action": "expectText",
+          "as": "viewer",
+          "selector": "[data-testid=\"detail-status\"]",
+          "text": "Resolved"
+        },
+        {
+          "action": "expectText",
+          "as": "viewer",
+          "selector": "[data-testid=\"detail-timeline\"]",
+          "text": "Bins were taken in on Tuesday."
+        }
+      ]
+    },
+    {
+      "name": "a status change the hub did not apply is reported, leaves the notice open and logs nothing",
+      "members": {
+        "viewer": "adult",
+        "other": "adult"
+      },
+      "steps": [
+        {
+          "action": "seedGroup",
+          "group": "board",
+          "name": "Board of Directors",
+          "members": [
+            "viewer"
+          ]
+        },
+        {
+          "action": "seedRaw",
+          "sql": "INSERT INTO app_violation_tracking__settings (key, value) VALUES ('board_group_id', ?)",
+          "params": [
+            "{{group:board}}"
+          ]
+        },
+        {
+          "action": "seedRaw",
+          "sql": "INSERT INTO app_violation_tracking__violations (id, unit_id, issued_by, category, description, cure_deadline, status, created_at, updated_at) VALUES (?, ?, ?, 'parking', ?, date('now','+14 days'), 'open', datetime('now'), datetime('now'))",
+          "params": [
+            "ui-theirs",
+            "{{other}}",
+            "{{viewer}}",
+            "Bins left at the kerb past collection day."
+          ]
+        },
+        {
+          "action": "open",
+          "as": "viewer"
+        },
+        {
+          "action": "click",
+          "as": "viewer",
+          "selector": "[data-testid=\"violation-card\"][data-violation-id=\"ui-theirs\"]"
+        },
+        {
+          "action": "expectVisible",
+          "as": "viewer",
+          "selector": "[data-testid=\"violation-detail\"][data-violation-id=\"ui-theirs\"]"
+        },
+        {
+          "action": "expectText",
+          "as": "viewer",
+          "selector": "[data-testid=\"detail-status\"]",
+          "text": "Open"
+        },
+        {
+          "action": "fill",
+          "as": "viewer",
+          "selector": "[data-testid=\"board-note\"]",
+          "value": "Bins were taken in on Tuesday."
+        },
+        {
+          "action": "fault",
+          "as": "viewer",
+          "mode": "noop"
+        },
+        {
+          "action": "click",
+          "as": "viewer",
+          "selector": "[data-testid=\"resolve-notice\"]"
+        },
+        {
+          "action": "expectText",
+          "as": "viewer",
+          "text": "This notice can no longer be changed."
+        },
+        {
+          "action": "expectCount",
+          "as": "viewer",
+          "selector": "[data-testid=\"violation-detail\"][data-violation-id=\"ui-theirs\"]",
+          "count": 0
+        },
+        {
+          "action": "fault",
+          "as": "viewer",
+          "mode": "none"
+        },
+        {
+          "action": "reload",
+          "as": "viewer"
+        },
+        {
+          "action": "click",
+          "as": "viewer",
+          "selector": "[data-testid=\"violation-card\"][data-violation-id=\"ui-theirs\"]"
+        },
+        {
+          "action": "expectText",
+          "as": "viewer",
+          "selector": "[data-testid=\"detail-status\"]",
+          "text": "Open"
+        },
+        {
+          "action": "expectNoText",
+          "as": "viewer",
+          "text": "Bins were taken in on Tuesday."
+        }
+      ]
     }
   ]
 }
