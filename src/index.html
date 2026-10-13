@@ -266,7 +266,7 @@ async function db(sql, params = []) {
   });
   const body = await res.json().catch(() => null);
   if (!res.ok || !body || typeof body !== "object" || body.error) {
-    throw new Error(body?.error ?? `Database request failed (${res.status})`);
+    throw Object.assign(new Error(body?.error ?? `Database request failed (${res.status})`), { status: res.status });
   }
   return body;
 }
@@ -722,8 +722,8 @@ window.submitIssue = async function() {
   const now = new Date().toISOString();
   // The form stays open, as typed, until the notice is stored.
   const stored = await whileSaving(btn, "Issuing…", async () => {
+    let photoFileId = null;
     try {
-      let photoFileId = null;
       if (photoInput?.files?.[0]) {
         const { id } = await files.upload(photoInput.files[0]);
         photoFileId = id;
@@ -742,6 +742,13 @@ window.submitIssue = async function() {
         status: "open", created_at: now, updated_at: now });
       return true;
     } catch (e) {
+      // The hub refused the notice, so nothing names the photo just uploaded
+      // and nothing ever would: it would sit against the household's storage.
+      // Only on a refusal the hub makes without storing anything: a row policy
+      // (403) or a full database (507). Any other failure — no answer at all,
+      // or a 400 the hub gives a write that timed out — may have been stored,
+      // and then the photo is the notice's.
+      if (photoFileId && (e?.status === 403 || e?.status === 507)) files.delete(photoFileId).catch(() => {});
       showError(e, "Couldn’t issue the notice — try again.");
       return false;
     }
