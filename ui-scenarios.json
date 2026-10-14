@@ -305,7 +305,7 @@
         {
           "action": "expectText",
           "as": "viewer",
-          "text": "This notice can no longer be changed."
+          "text": "You don’t have permission to update the notice."
         },
         {
           "action": "expectCount",

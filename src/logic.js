@@ -87,3 +87,33 @@ export function isOverdue(violation) {
 export function searchableFields(violation, unitName = "") {
   return [violation.description, violation.category, unitName];
 }
+
+/**
+ * The hub's refusals of a photo or a write that name their own case: a line in
+ * the app's words, or "" when the status names none of them. Never the hub's text.
+ */
+export function refusalLine(status) {
+  return {
+    413: "That file is too large.",
+    415: "That kind of file can’t be uploaded.",
+    429: "Too many tries — wait a minute and try again.",
+    507: "The household’s storage is full — free up space first.",
+  }[status] ?? "";
+}
+
+/**
+ * The line a failed write shows, from the error's status — never the hub's
+ * text. "Try again" only where trying again can work. `found` is the caller's
+ * re-read after a write that changed nothing (true: the row is still there).
+ */
+export function failureLine(e, { action, thing, found } = {}) {
+  if (e?.forUser) return e.message;
+  if (e?.code === "UNIQUE_CONSTRAINT" || /UNIQUE constraint failed/i.test(String(e?.message ?? ""))) return `That ${thing} already exists.`;
+  if (e?.status === 403) return `You don’t have permission to ${action}.`;
+  const refused = refusalLine(e?.status);
+  if (refused) return refused;
+  if (found === false || (found === undefined && e?.status === 404)) return `This ${thing} has been removed.`;
+  if (found === true) return `You don’t have permission to ${action}.`;
+  if (e?.status === 409) return `This ${thing} was changed by someone else — check it first.`;
+  return `Couldn’t ${action} — try again.`;
+}
